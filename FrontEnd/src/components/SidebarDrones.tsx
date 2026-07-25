@@ -8,7 +8,7 @@ interface SidebarDronesProps {
 export default function SidebarDrones({ drones }: SidebarDronesProps) {
   return (
     <div className="sidebar-section">
-      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cyan)', marginBottom: '16px' }}>
+      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'neon-purple', marginBottom: '16px' }}>
         <Crosshair size={20} /> Frota de Drones
       </h2>
       

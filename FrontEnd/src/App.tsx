@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import './Buttons.css';
-import { Zap, RotateCcw } from 'lucide-react';
+import { Package, RotateCcw, History, Info } from 'lucide-react';
 import MapGrid from './components/MapGrid';
 import SidebarQueue from './components/SidebarQueue';
 import SidebarDrones from './components/SidebarDrones';
 import DashboardMetrics from './components/DashboardMetrics';
+import HistoricoPedidos from './components/HistoricoPedidos';
 import axios from 'axios';
 
 import type { Pedido, Drone, Obstaculo } from './types';
@@ -16,6 +17,8 @@ function App() {
   const [obstaculos, setObstaculos] = useState<Obstaculo[]>([]);
   const [activeVoos, setActiveVoos] = useState<any[]>([]);
   const [voos, setVoos] = useState<any[]>([]);
+  const [abaAtiva, setAbaAtiva] = useState<'simulador' | 'historico'>('simulador');
+  const [modalEspecificacoes, setModalEspecificacoes] = useState(false);
 
   const fetchDados = async () => {
     try {
@@ -109,43 +112,89 @@ function App() {
   return (
     <div className="app-container">
       <header className="dashboard-header glass-panel">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <h1 className="glow-text" style={{ display: 'flex', gap: '8px' }}>
-            <Zap color="var(--cyan)" /> Drone simulator
+        <div className="header-title-group">
+          <h1 className="glow-text">
+            <Package size={20} /> Drone Delivery
           </h1>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="btn-iniciar-entrega" onClick={handleIniciarEntregas}>
-               ▶ Iniciar Entregas (Despachar)
-            </button>
-            <button className="btn-gerar-mock" style={{ padding: '8px' }} onClick={handleReset} title="Resetar Dados">
-              <RotateCcw size={16} />
-            </button>
-          </div>
         </div>
-        <DashboardMetrics drones={drones} pedidos={pedidos} voos={voos} />
+
+        <div className="header-metrics-wrap">
+          <DashboardMetrics drones={drones} pedidos={pedidos} voos={voos} />
+        </div>
+
+        <div className="header-actions">
+          <button className="btn-gerar-mock" onClick={() => setModalEspecificacoes(true)}>
+            <Info size={16} /> Especificações
+          </button>
+          <button className="btn-gerar-mock" onClick={handleReset} title="Resetar Dados">
+            <RotateCcw size={16} />
+          </button>
+        </div>
       </header>
 
-      <aside className="sidebar glass-panel">
-        <button className="btn-gerar-mock" onClick={handleGerarPedidosAleatorios}>
-          Gerar 5 Pedidos Mock
+      <div className="abas-navegacao glass-panel">
+        <button
+          className={`aba-btn ${abaAtiva === 'simulador' ? 'active' : ''}`}
+          onClick={() => setAbaAtiva('simulador')}
+        >
+          Painel de Entregas
         </button>
-        <SidebarQueue pedidos={pedidos} onAddPedido={handleAddPedido} />
-      </aside>
+        <button
+          className={`aba-btn ${abaAtiva === 'historico' ? 'active' : ''}`}
+          onClick={() => setAbaAtiva('historico')}
+        >
+          <History size={16} /> Histórico de Pedidos
+        </button>
+      </div>
 
-      <main className="main-content glass-panel">
-        <MapGrid 
-          obstaculos={obstaculos} 
-          drones={drones} 
-          pedidos={pedidos}
-          activeVoos={activeVoos}
-          onAddObstaculo={handleAddObstaculo} 
-          onDeleteObstaculo={handleDeleteObstaculo}
-        />
-      </main>
+      {abaAtiva === 'simulador' ? (
+        <>
+          <aside className="sidebar glass-panel">
+            <div className="sidebar-actions">
+              <button className="btn-iniciar-entrega" onClick={handleIniciarEntregas}>
+                ▶ Iniciar Entregas
+              </button>
+              <button className="btn-gerar-mock" onClick={handleGerarPedidosAleatorios}>
+                Gerar Pedidos Aleatórios
+              </button>
+            </div>
+            <SidebarQueue pedidos={pedidos} onAddPedido={handleAddPedido} />
+          </aside>
 
-      <aside className="sidebar right-sidebar glass-panel">
-        <SidebarDrones drones={drones} />
-      </aside>
+          <main className="main-content glass-panel">
+            <MapGrid 
+              obstaculos={obstaculos} 
+              drones={drones} 
+              pedidos={pedidos}
+              activeVoos={activeVoos}
+              onAddObstaculo={handleAddObstaculo} 
+              onDeleteObstaculo={handleDeleteObstaculo}
+            />
+          </main>
+
+          <aside className="sidebar right-sidebar glass-panel">
+            <SidebarDrones drones={drones} />
+          </aside>
+        </>
+      ) : (
+        <main className="main-content historico-view glass-panel">
+          <HistoricoPedidos />
+        </main>
+      )}
+
+      {modalEspecificacoes && (
+        <div className="modal-overlay" onClick={() => setModalEspecificacoes(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>Especificações do Serviço</h3>
+            <ul>
+              <li><strong>Área de atuação:</strong> Belo Horizonte (MG)</li>
+              <li><strong>Distância máxima:</strong> 16 km totais (8 km de ida e 8 km de volta)</li>
+              <li><strong>Peso máximo da carga:</strong> 2,5 kg</li>
+            </ul>
+            <button className="btn-iniciar-entrega" onClick={() => setModalEspecificacoes(false)}>Fechar</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

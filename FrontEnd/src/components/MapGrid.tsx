@@ -2,7 +2,7 @@ import { useState, useRef, type MouseEvent as ReactMouseEvent, useEffect } from 
 import type { Drone, Pedido, Obstaculo } from '../types';
 import DroneMarker from './DroneMarker';
 import './MapGrid.css';
-import { MapPin, X, ZoomIn, ZoomOut, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Move } from 'lucide-react';
+import { MapPin, X, ZoomIn, ZoomOut, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Move, Zap } from 'lucide-react';
 
 interface MapGridProps {
   obstaculos: Obstaculo[];
@@ -227,6 +227,11 @@ export default function MapGrid({ obstaculos, drones, pedidos, activeVoos, onAdd
   
   // Apply scale and translate
   const transform = `scale(${finalScale}) translate(${finalPanX}%, ${finalPanY}%)`;
+  const baseCharging = drones.some(d => {
+    const animState = animatedDrones[d.id!];
+    const status = animState ? animState.status : d.status;
+    return status === 'CARREGANDO' || status === 'IDLE';
+  });
 
   return (
     <div 
@@ -259,6 +264,9 @@ export default function MapGrid({ obstaculos, drones, pedidos, activeVoos, onAdd
         {/* Draw Base Station */}
         <div className="base-station" style={{ top: '0%', left: '0%' }}>
           BASE
+        </div>
+        <div className={`base-charger ${baseCharging ? 'active' : ''}`} title="Base de carregamento">
+          <Zap size={14} />
         </div>
 
         {/* Draw Pedidos as Pins */}

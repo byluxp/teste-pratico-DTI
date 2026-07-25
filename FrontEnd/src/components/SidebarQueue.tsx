@@ -19,21 +19,24 @@ export default function SidebarQueue({ pedidos, onAddPedido }: SidebarQueueProps
         {pedidos.length === 0 ? (
           <p className="empty-queue">Nenhum pedido na fila.</p>
         ) : (
-          pedidos.map(pedido => (
-            <div key={pedido.id} className={`pedido-card priority-${pedido.prioridade.toLowerCase()}`}>
-              <div className="pedido-header">
-                <span className="pedido-id"># {pedido.id}</span>
-                <span className="pedido-badge">{pedido.prioridade}</span>
+          pedidos.map(pedido => {
+            const prioridade = pedido.prioridade?.toLowerCase() ?? 'media';
+            return (
+              <div key={pedido.id} className={`pedido-card priority-${prioridade}`}>
+                <div className="pedido-header">
+                  <span className="pedido-id"># {pedido.id}</span>
+                  <span className="pedido-badge">{pedido.prioridade ?? 'MEDIA'}</span>
+                </div>
+                <div className="pedido-body">
+                  <Package size={16} />
+                  <span>Peso: {pedido.peso} kg</span>
+                </div>
+                <div className="pedido-footer">
+                  Status: {pedido.status}
+                </div>
               </div>
-              <div className="pedido-body">
-                <Package size={16} />
-                <span>Peso: {pedido.peso} kg</span>
-              </div>
-              <div className="pedido-footer">
-                Status: {pedido.status}
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

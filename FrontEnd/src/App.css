@@ -1,10 +1,11 @@
 .app-container {
   display: grid;
   grid-template-columns: 350px 1fr 350px;
-  grid-template-rows: 90px 1fr;
-  height: 100vh;
+  grid-template-rows: auto auto 1fr;
+  min-height: 100vh;
   gap: 24px;
-  padding: 24px;
+  padding: 0;
+  margin: 0;
   background: linear-gradient(135deg, #f8f9fa 0%, #f5f7fb 100%);
 }
 
@@ -13,7 +14,106 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px;
+  gap: 20px;
+  width: 100%;
+  padding: 20px 28px;
+  margin: 0;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 0;
+}
+
+.header-title-group {
+  display: flex;
+  align-items: center;
+  min-width: 220px;
+  flex: 0 0 auto;
+}
+
+.header-title-group h1 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.1;
+}
+
+.sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-card {
+  background: #ffffff;
+  padding: 24px;
+  width: min(480px, 90vw);
+  border: 1px solid #e5e7eb;
+}
+
+.modal-card ul {
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+.header-metrics-wrap {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.abas-navegacao {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0;
+  padding: 0;
+  width: 100%;
+  border-radius: 0;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: none;
+}
+
+.aba-btn {
+  border: none;
+  border-radius: 0 !important;
+  padding: 12px 18px;
+  background: transparent;
+  color: #4b5563;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.aba-btn.active {
+  background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+  color: white;
+  border-color: #7c3aed;
 }
 
 .sidebar {
@@ -21,12 +121,12 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 24px;
+  padding: 20px;
   overflow-y: auto;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .sidebar.right-sidebar {
@@ -41,8 +141,16 @@
   padding: 0;
   position: relative;
   overflow: hidden;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.main-content.historico-view {
+  grid-column: 1 / -1;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
 }

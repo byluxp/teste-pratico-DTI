@@ -3,7 +3,7 @@
   color: #ffffff;
   border: none;
   padding: 8px 16px;
-  border-radius: 10px;
+  border-radius: 0px !important;
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(124, 58, 237, 0.16);
@@ -22,7 +22,7 @@
   border: 1px dashed var(--primary);
   color: var(--primary);
   padding: 10px;
-  border-radius: 10px;
+  border-radius: 0px !important;
   cursor: pointer;
   transition: all 0.2s;
 }

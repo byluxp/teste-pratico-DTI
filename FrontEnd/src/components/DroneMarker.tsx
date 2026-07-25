@@ -1,6 +1,6 @@
 import type { Drone } from '../types';
 import './DroneMarker.css';
-import { Crosshair, BatteryFull, BatteryMedium, BatteryLow } from 'lucide-react';
+import { BatteryFull, BatteryMedium, BatteryLow } from 'lucide-react';
 
 interface DroneMarkerProps {
   drone: Drone;
@@ -30,7 +30,15 @@ export default function DroneMarker({ drone, x, y }: DroneMarkerProps) {
   return (
     <div className="drone-marker" style={{ top, left }}>
       <div className="drone-icon-wrapper">
-        <Crosshair size={24} className="drone-icon" />
+        <svg viewBox="0 0 64 64" className="drone-svg" aria-label="Drone">
+          <rect x="20" y="22" width="24" height="16" rx="4" fill="currentColor" />
+          <rect x="14" y="16" width="8" height="8" rx="2" fill="currentColor" />
+          <rect x="42" y="16" width="8" height="8" rx="2" fill="currentColor" />
+          <rect x="14" y="40" width="8" height="8" rx="2" fill="currentColor" />
+          <rect x="42" y="40" width="8" height="8" rx="2" fill="currentColor" />
+          <path d="M26 14h12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+          <path d="M28 50h8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        </svg>
       </div>
       <div className={`drone-battery ${batteryClass}`}>
         <BatteryIcon size={12} />

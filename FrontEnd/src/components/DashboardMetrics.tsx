@@ -49,15 +49,15 @@ export default function DashboardMetrics({ drones, pedidos, voos = [] }: Dashboa
     <div className="metrics-container">
       <div className="metric-card">
         <span className="metric-label">Drones Disponíveis</span>
-        <span className="metric-value neon-green">{dronesDisponiveis}</span>
+        <span className="metric-value neon-purple">{dronesDisponiveis}</span>
       </div>
       <div className="metric-card">
         <span className="metric-label">Drones em Voo</span>
-        <span className="metric-value neon-cyan">{dronesEmVoo}</span>
+        <span className="metric-value neon-purple">{dronesEmVoo}</span>
       </div>
       <div className="metric-card">
         <span className="metric-label">Tempo Médio/Entrega</span>
-        <span className="metric-value neon-yellow">{tempoMedioStr}</span>
+        <span className="metric-value neon-purple">{tempoMedioStr}</span>
       </div>
       <div className="metric-card">
         <span className="metric-label">Entregas Concluídas</span>

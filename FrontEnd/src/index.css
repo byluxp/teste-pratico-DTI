@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap');
+
 :root {
   --background: #f8f9fa;
   --surface: #ffffff;
@@ -12,7 +14,7 @@
   --text: #1f2937;
   --text-muted: #6b7280;
 
-  --font-main: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-main: 'Chakra Petch', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 * {
@@ -21,8 +23,32 @@
   box-sizing: border-box;
 }
 
-body {
+button,
+[type="button"],
+[type="submit"],
+[type="reset"],
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-add-pedido,
+.btn-cancel,
+.btn-submit,
+.btn-delete-obs,
+.btn-confirm-yes,
+.btn-confirm-no,
+.aba-btn,
+.btn-iniciar-entrega,
+.btn-gerar-mock,
+.map-controls-panel button {
+  border-radius: 0 !important;
+}
+
+body, button, input, select, textarea {
   font-family: var(--font-main);
+}
+
+body {
+  margin: 0;
   background-color: var(--background);
   color: var(--text);
   min-height: 100vh;
@@ -31,10 +57,14 @@ body {
                     radial-gradient(circle at 85% 30%, rgba(124, 58, 237, 0.04), transparent 22%);
 }
 
+#root {
+  min-height: 100vh;
+}
+
 .glass-panel {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 0px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
 }
 
