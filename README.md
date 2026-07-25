@@ -1,6 +1,5 @@
 # 🚁 Simulador de Entregas por Drone
-
-> **Teste Prático — dti digital**  
+ 
 > **Desenvolvido por:** Lucila Cardoso
 
 Uma solução logística full-stack projetada para automação de entregas com drones. O sistema gerencia alocação de pedidos e calcula rotas otimizadas em um mapa 2D, desviando dinamicamente de zonas de exclusão aérea.
