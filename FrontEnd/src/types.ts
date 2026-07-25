@@ -18,6 +18,8 @@ export interface Drone {
   autonomiaMaximaKm: number;
   autonomiaAtualKm: number;
   velocidadeKmH: number;
+  codigo?: string;
+  pedidosNoVoo?: string[];
 }
 
 export interface Obstaculo {

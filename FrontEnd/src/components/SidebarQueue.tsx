@@ -9,6 +9,11 @@ interface SidebarQueueProps {
 }
 
 export default function SidebarQueue({ pedidos, onAddPedido }: SidebarQueueProps) {
+  const pedidosAtivos = pedidos.filter((pedido) => {
+    const status = String(pedido.status ?? '').toUpperCase();
+    return status === 'PENDENTE' || status === 'ALOCADO' || status === 'EM_ROTA' || status === 'EM_ANDAMENTO' || status === 'EM_VOO';
+  });
+
   return (
     <div className="sidebar-container">
       <h2 className="sidebar-title">Fila de Entregas</h2>
@@ -16,15 +21,15 @@ export default function SidebarQueue({ pedidos, onAddPedido }: SidebarQueueProps
       <AddPedidoForm onAdd={onAddPedido} />
       
       <div className="queue-list" style={{ marginTop: '16px' }}>
-        {pedidos.length === 0 ? (
+        {pedidosAtivos.length === 0 ? (
           <p className="empty-queue">Nenhum pedido na fila.</p>
         ) : (
-          pedidos.map(pedido => {
+          pedidosAtivos.map(pedido => {
             const prioridade = pedido.prioridade?.toLowerCase() ?? 'media';
             return (
               <div key={pedido.id} className={`pedido-card priority-${prioridade}`}>
                 <div className="pedido-header">
-                  <span className="pedido-id"># {pedido.id}</span>
+                  <span className="pedido-id">{pedido.numeroPedido ?? `#${pedido.id}`}</span>
                   <span className="pedido-badge">{pedido.prioridade ?? 'MEDIA'}</span>
                 </div>
                 <div className="pedido-body">

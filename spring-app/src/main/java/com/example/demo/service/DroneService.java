@@ -22,10 +22,14 @@ public class DroneService {
         double capacidadeMaxima = ThreadLocalRandom.current().nextDouble(1.0, 2.5 + 1e-9);
         double autonomiaMaxima = ThreadLocalRandom.current().nextDouble(8.0, 16.0 + 1e-9);
 
+        long totalDrones = droneRepository.count();
+        String codigo = String.format("DD%02d", totalDrones + 1);
+
         drone.setCapacidadeMaximaKg(capacidadeMaxima);
         drone.setAutonomiaMaximaKm(autonomiaMaxima);
         drone.setAutonomiaAtualKm(autonomiaMaxima);
         drone.setStatus(StatusDrone.IDLE);
+        drone.setCodigo(codigo);
         return droneRepository.save(drone);
     }
     

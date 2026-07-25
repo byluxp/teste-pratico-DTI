@@ -18,6 +18,7 @@ public class Drone {
     private Double autonomiaMaximaKm;
     private Double autonomiaAtualKm;
     private Double velocidadeKmH; // Ex: 60 km/h
+    private String codigo;
 
     @Enumerated(EnumType.STRING)
     private StatusDrone status;

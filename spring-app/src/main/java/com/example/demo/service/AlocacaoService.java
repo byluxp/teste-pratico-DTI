@@ -32,12 +32,14 @@ public class AlocacaoService {
     public List<Voo> alocarPedidos() {
         List<Voo> voosCriados = new ArrayList<>();
         List<Drone> dronesDisponiveis = droneRepository.findAll().stream()
-                .filter(d -> d.getStatus() == StatusDrone.IDLE)
+                .filter(d -> d.getStatus() == StatusDrone.IDLE && (d.getAutonomiaAtualKm() == null || d.getAutonomiaAtualKm() > 0.0))
                 .toList();
 
         if (dronesDisponiveis.isEmpty()) {
             return voosCriados;
         }
+
+        reordenarPedidosIndisponiveis();
 
         List<Pedido> pedidosPendentes = new ArrayList<>(pedidoRepository.findByStatusOrderByPrioridadeDescDataCriacaoAsc(StatusPedido.PENDENTE));
         List<Obstaculo> obstaculos = obstaculoRepository.findAll();
@@ -110,6 +112,24 @@ public class AlocacaoService {
             }
         }
         return voosCriados;
+    }
+
+    private void reordenarPedidosIndisponiveis() {
+        for (StatusPedido status : List.of(StatusPedido.ALOCADO, StatusPedido.EM_ROTA)) {
+            for (Pedido pedido : pedidoRepository.findByStatus(status)) {
+                Voo voo = pedido.getVoo();
+                Drone drone = voo != null ? voo.getDrone() : null;
+                if (drone != null && drone.getStatus() == StatusDrone.INDISPONIVEL) {
+                    pedido.setStatus(StatusPedido.PENDENTE);
+                    pedido.setVoo(null);
+                    pedidoRepository.save(pedido);
+                    if (voo != null) {
+                        voo.setStatus(StatusVoo.CONCLUIDO);
+                        vooRepository.save(voo);
+                    }
+                }
+            }
+        }
     }
 
     private int prioridadeRank(PrioridadePedido prioridade) {

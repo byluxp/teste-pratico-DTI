@@ -70,8 +70,14 @@ public class SimulacaoService {
                     droneRepository.save(drone);
                 } 
                 else if (drone.getStatus() == StatusDrone.RETORNANDO) {
-                    drone.setStatus(StatusDrone.IDLE);
-                    drone.setAutonomiaAtualKm(drone.getAutonomiaAtualKm() - voo.getDistanciaTotalPrevistaKm());
+                    double autonomiaRestante = (drone.getAutonomiaAtualKm() != null ? drone.getAutonomiaAtualKm() : 0.0) - (voo.getDistanciaTotalPrevistaKm() != null ? voo.getDistanciaTotalPrevistaKm() : 0.0);
+                    if (autonomiaRestante <= 0.0) {
+                        drone.setAutonomiaAtualKm(0.0);
+                        drone.setStatus(StatusDrone.INDISPONIVEL);
+                    } else {
+                        drone.setAutonomiaAtualKm(autonomiaRestante);
+                        drone.setStatus(StatusDrone.IDLE);
+                    }
                     System.out.println("Drone " + drone.getId() + " retornou à base. Autonomia: " + drone.getAutonomiaAtualKm());
                     
                     voo.setStatus(StatusVoo.CONCLUIDO);

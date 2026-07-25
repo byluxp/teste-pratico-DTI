@@ -40,7 +40,8 @@ export default function DashboardMetrics({ drones, pedidos, voos = [] }: Dashboa
 
       if (Object.keys(rankingDrones).length > 0) {
         const melhorId = Object.keys(rankingDrones).sort((a, b) => rankingDrones[Number(b)] - rankingDrones[Number(a)])[0];
-        droneEficienteStr = `Drone #${melhorId}`;
+        const drone = drones.find(d => String(d.id) === melhorId);
+        droneEficienteStr = drone?.codigo ?? `DD${String(melhorId).padStart(2, '0')}`;
       }
     }
   }

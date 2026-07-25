@@ -27,16 +27,31 @@ function App() {
       // O desafio possui /drones.
       
       const resDrones = await axios.get('http://localhost:8080/drones/status').catch(() => ({ data: [] }));
-      setDrones(Array.isArray(resDrones.data) ? resDrones.data : []);
-      
       const resObstaculos = await axios.get('http://localhost:8080/obstaculos').catch(() => ({ data: [] }));
-      setObstaculos(Array.isArray(resObstaculos.data) ? resObstaculos.data : []);
-      
       const resPedidos = await axios.get('http://localhost:8080/pedidos').catch(() => ({ data: [] }));
-      setPedidos(Array.isArray(resPedidos.data) ? resPedidos.data : []);
-
       const resVoos = await axios.get('http://localhost:8080/entregas/rota').catch(() => ({ data: [] }));
-      setVoos(Array.isArray(resVoos.data) ? resVoos.data : []);
+
+      const pedidosList = Array.isArray(resPedidos.data) ? resPedidos.data : [];
+      const voosList = Array.isArray(resVoos.data) ? resVoos.data : [];
+
+      const dronesComPedidos = (Array.isArray(resDrones.data) ? resDrones.data : []).map((drone: any) => {
+        const pedidosDoDrone = voosList
+          .filter((voo: any) => String(voo?.drone?.id ?? '') === String(drone.id))
+          .flatMap((voo: any) => Array.isArray(voo?.pedidos) ? voo.pedidos : [])
+          .map((pedido: any) => pedido?.numeroPedido ?? `#${pedido?.id}`)
+          .filter(Boolean);
+
+        return {
+          ...drone,
+          codigo: drone.codigo ?? `DD${drone.id}`,
+          pedidosNoVoo: pedidosDoDrone
+        };
+      });
+
+      setDrones(dronesComPedidos);
+      setObstaculos(Array.isArray(resObstaculos.data) ? resObstaculos.data : []);
+      setPedidos(pedidosList);
+      setVoos(voosList);
     } catch (e) {
       console.error(e);
     }
