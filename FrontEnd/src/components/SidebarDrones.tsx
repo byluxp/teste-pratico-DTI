@@ -23,6 +23,7 @@ export default function SidebarDrones({ drones }: SidebarDronesProps) {
             if (batteryPct < 25) BatteryIcon = BatteryLow;
             const status = String(drone.status ?? '').toUpperCase();
             const label = status === 'INDISPONIVEL' ? 'INDISPONÍVEL' : status;
+            const mostrarPedidos = status === 'EM_VOO' || status === 'ENTREGANDO' || status === 'RETORNANDO';
             const pedidosNoVoo = drone.pedidosNoVoo?.length ? drone.pedidosNoVoo.join(', ') : 'Nenhum pedido alocado';
 
             return (
@@ -46,9 +47,11 @@ export default function SidebarDrones({ drones }: SidebarDronesProps) {
                   <span>Capacidade: {drone.capacidadeMaximaKg} kg</span>
                 </div>
 
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
-                  <span>Pedidos no voo: {pedidosNoVoo}</span>
-                </div>
+                {mostrarPedidos && (
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                    <span>Pedidos no voo: {pedidosNoVoo}</span>
+                  </div>
+                )}
               </div>
             );
           })
