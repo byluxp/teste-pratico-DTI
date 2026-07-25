@@ -6,6 +6,7 @@ import com.example.demo.repository.DroneRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class DroneService {
@@ -18,8 +19,13 @@ public class DroneService {
 
     
     public Drone criarDrone(Drone drone) {
+        double capacidadeMaxima = ThreadLocalRandom.current().nextDouble(1.0, 2.5 + 1e-9);
+        double autonomiaMaxima = ThreadLocalRandom.current().nextDouble(8.0, 16.0 + 1e-9);
+
+        drone.setCapacidadeMaximaKg(capacidadeMaxima);
+        drone.setAutonomiaMaximaKm(autonomiaMaxima);
+        drone.setAutonomiaAtualKm(autonomiaMaxima);
         drone.setStatus(StatusDrone.IDLE);
-        drone.setAutonomiaAtualKm(drone.getAutonomiaMaximaKm());
         return droneRepository.save(drone);
     }
     

@@ -22,28 +22,39 @@ services:
       context: ./spring-app
       dockerfile: Dockerfile
     container_name: drone-backend
+    working_dir: /app
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/drone?createDatabaseIfNotExist=true&useSSL=true&requireSSL=false
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       SPRING_OUTPUT_ANSI_ENABLED: ${SPRING_OUTPUT_ANSI_ENABLED:-ALWAYS}
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
     ports:
       - "8080:8080"
+    volumes:
+      - ./spring-app:/app
     depends_on:
       postgres:
         condition: service_healthy
+    command: ["mvn", "spring-boot:run"]
 
   frontend:
     build:
       context: ./FrontEnd
       dockerfile: Dockerfile
     container_name: drone-frontend
+    working_dir: /app
     environment:
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+      CHOKIDAR_USEPOLLING: "true"
     ports:
-      - "3000:80"
+      - "5173:5173"
+    volumes:
+      - ./FrontEnd:/app
+      - /app/node_modules
     depends_on:
       - backend
+    command: ["sh", "-c", "npm run dev -- --host 0.0.0.0 --port 5173"]
 
 volumes:
   postgres_data:
