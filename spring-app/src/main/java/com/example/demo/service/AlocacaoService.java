@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -38,8 +39,13 @@ public class AlocacaoService {
             return voosCriados;
         }
 
-        List<Pedido> pedidosPendentes = pedidoRepository.findByStatusOrderByPrioridadeDescDataCriacaoAsc(StatusPedido.PENDENTE);
+        List<Pedido> pedidosPendentes = new ArrayList<>(pedidoRepository.findByStatusOrderByPrioridadeDescDataCriacaoAsc(StatusPedido.PENDENTE));
         List<Obstaculo> obstaculos = obstaculoRepository.findAll();
+
+        pedidosPendentes.sort(Comparator
+                .comparingInt((Pedido pedido) -> prioridadeRank(pedido.getPrioridade()))
+                .thenComparingDouble(pedido -> calcularDistanciaComObstaculos(0.0, 0.0, pedido.getCoordenadaX() != null ? pedido.getCoordenadaX() : 0.0, pedido.getCoordenadaY() != null ? pedido.getCoordenadaY() : 0.0, obstaculos))
+                .thenComparingLong(Pedido::getId));
 
         for (Drone drone : dronesDisponiveis) {
             if (pedidosPendentes.isEmpty()) break;
@@ -61,7 +67,12 @@ public class AlocacaoService {
                 double distanciaDeVoltaAntiga = calcularDistanciaComObstaculos(xAtual, yAtual, 0.0, 0.0, obstaculos);
                 double novaDistanciaTotal = distanciaTotalPrevista - distanciaDeVoltaAntiga + distanciaParaPedido + distanciaDeVolta;
 
-                if (novaDistanciaTotal <= drone.getAutonomiaAtualKm()) {
+                double autonomiaDisponivelKm = Math.min(
+                        drone.getAutonomiaAtualKm() != null ? drone.getAutonomiaAtualKm() : 0.0,
+                        drone.getAutonomiaMaximaKm() != null ? drone.getAutonomiaMaximaKm() : 16.0
+                );
+
+                if (novaDistanciaTotal <= autonomiaDisponivelKm) {
                     pedidosAlocados.add(pedido);
                     pesoAtual += pedido.getPeso();
                     distanciaTotalPrevista = novaDistanciaTotal;
@@ -99,6 +110,15 @@ public class AlocacaoService {
             }
         }
         return voosCriados;
+    }
+
+    private int prioridadeRank(PrioridadePedido prioridade) {
+        if (prioridade == null) return 2;
+        return switch (prioridade) {
+            case ALTA -> 0;
+            case MEDIA -> 1;
+            case BAIXA -> 2;
+        };
     }
 
     private double calcularDistanciaComObstaculos(double x1, double y1, double x2, double y2, List<Obstaculo> obstaculos) {

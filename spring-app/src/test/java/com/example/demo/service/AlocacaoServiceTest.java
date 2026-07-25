@@ -50,6 +50,7 @@ class AlocacaoServiceTest {
         droneDisponivel.setCapacidadeMaximaKg(10.0);
         droneDisponivel.setAutonomiaMaximaKm(50.0);
         droneDisponivel.setAutonomiaAtualKm(50.0);
+        droneDisponivel.setVelocidadeKmH(40.0);
 
         pedido1 = new Pedido();
         pedido1.setId(10L);

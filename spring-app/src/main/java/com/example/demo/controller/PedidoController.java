@@ -3,9 +3,11 @@ package com.example.demo.controller;
 import com.example.demo.model.Pedido;
 import com.example.demo.service.PedidoService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/pedidos")
@@ -31,5 +33,10 @@ public class PedidoController {
     @GetMapping
     public List<Pedido> listarPedidos() {
         return pedidoService.listarTodos();
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
     }
 }

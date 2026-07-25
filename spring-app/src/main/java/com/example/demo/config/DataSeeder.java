@@ -23,9 +23,9 @@ public class DataSeeder implements CommandLineRunner {
     public void seedDrone() {
         if (droneRepository.count() == 0) {
             Drone drone = new Drone();
-            drone.setCapacidadeMaximaKg(200.0);
-            drone.setAutonomiaMaximaKm(1000.0);
-            drone.setAutonomiaAtualKm(1000.0);
+            drone.setCapacidadeMaximaKg(2.5);
+            drone.setAutonomiaMaximaKm(16.0);
+            drone.setAutonomiaAtualKm(16.0);
             drone.setVelocidadeKmH(40.0);
             drone.setStatus(StatusDrone.IDLE);
             droneRepository.save(drone);

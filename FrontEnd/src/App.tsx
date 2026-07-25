@@ -61,7 +61,9 @@ function App() {
     try {
       const res = await axios.post('http://localhost:8080/pedidos', pedido);
       setPedidos(prev => [...prev, res.data]);
-    } catch (e) {
+    } catch (e: any) {
+      const message = e?.response?.data?.message || e?.message || 'Erro ao criar pedido';
+      window.alert(message);
       console.error("Erro ao criar pedido:", e);
     }
   };

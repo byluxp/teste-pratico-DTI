@@ -44,6 +44,7 @@ class SimulacaoServiceTest {
         drone = new Drone();
         drone.setId(1L);
         drone.setAutonomiaAtualKm(50.0);
+        drone.setAutonomiaMaximaKm(50.0);
 
         pedido = new Pedido();
         pedido.setId(10L);
