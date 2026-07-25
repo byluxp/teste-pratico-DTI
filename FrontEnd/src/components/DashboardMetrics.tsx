@@ -48,24 +48,24 @@ export default function DashboardMetrics({ drones, pedidos, voos = [] }: Dashboa
   return (
     <div className="metrics-container">
       <div className="metric-card">
-        <span className="metric-label">Drones Disponíveis</span>
+        <span className="metric-label">Disponíveis</span>
         <span className="metric-value neon-purple">{dronesDisponiveis}</span>
       </div>
       <div className="metric-card">
-        <span className="metric-label">Drones em Voo</span>
+        <span className="metric-label">Em viagem</span>
         <span className="metric-value neon-purple">{dronesEmVoo}</span>
       </div>
       <div className="metric-card">
-        <span className="metric-label">Tempo Médio/Entrega</span>
+        <span className="metric-label">Finalizadas </span>
+        <span className="metric-value neon-purple">{pedidosEntregues}</span>
+      </div>
+            <div className="metric-card">
+        <span className="metric-label">Tempo de Entrega Médio</span>
         <span className="metric-value neon-purple">{tempoMedioStr}</span>
       </div>
       <div className="metric-card">
-        <span className="metric-label">Entregas Concluídas</span>
-        <span className="metric-value neon-purple">{pedidosEntregues}</span>
-      </div>
-      <div className="metric-card">
         <span className="metric-label">Drone Mais Eficiente</span>
-        <span className="metric-value glow-text" style={{color: 'var(--green)'}}>{droneEficienteStr}</span>
+        <span className="metric-value glow-text" style={{color: 'var(--primary)'}}>{droneEficienteStr}</span>
       </div>
     </div>
   );

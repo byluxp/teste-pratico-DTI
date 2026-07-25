@@ -91,3 +91,8 @@ Durante o processo de desenvolvimento, as seguintes regras de negócio e conceit
   - Estilização escura (*Dark Mode* `#111827`) focada exclusivamente no `MapGrid`.
   - Ícone de drone acompanhando o vetor de movimento durante a simulação de voo.
   - Ícone de base de carregamento (*Charger*) posicionado no ponto de origem com efeito visual animado de pulso/neon de recarga.
+
+### 11. Validação do Build e Suíte de Testes
+> **Status:** Aprovado.
+> - **Backend (Spring Boot):** 10/10 testes unitários executados com 0 falhas e 0 erros.
+> - **Frontend (React + Vite/TS):** Processo de build e verificação de tipos concluídos com sucesso (0 erros de compilação).

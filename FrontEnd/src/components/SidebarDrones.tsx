@@ -8,13 +8,13 @@ interface SidebarDronesProps {
 export default function SidebarDrones({ drones }: SidebarDronesProps) {
   return (
     <div className="sidebar-section">
-      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'neon-purple', marginBottom: '16px' }}>
+      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#7C3AED', marginBottom: '16px' }}>
         <Crosshair size={20} /> Frota de Drones
       </h2>
       
       <div className="queue-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {drones.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Nenhum drone na frota.</p>
+          <p style={{ color: '#111827', fontSize: '0.9rem' }}>Nenhum drone na frota.</p>
         ) : (
           drones.map(drone => {
             const batteryPct = (drone.autonomiaAtualKm / drone.autonomiaMaximaKm) * 100;
