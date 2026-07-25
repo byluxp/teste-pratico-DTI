@@ -1,0 +1,44 @@
+.drone-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 1s ease-in-out;
+  z-index: 10;
+}
+
+.drone-icon-wrapper {
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  border-radius: 50%;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  animation: float 3s ease-in-out infinite;
+}
+
+.drone-icon {
+  color: var(--primary);
+}
+
+.drone-battery {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0,0,0,0.6);
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+.batt-high { color: var(--success); }
+.batt-med { color: var(--warning); }
+.batt-low { color: var(--danger); }
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}

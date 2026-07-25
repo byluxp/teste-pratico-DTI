@@ -1,0 +1,32 @@
+.metrics-container {
+  display: flex;
+  gap: 20px;
+}
+
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.neon-green { color: var(--success); text-shadow: none; }
+.neon-cyan { color: var(--primary); text-shadow: none; }
+.neon-yellow { color: var(--warning); text-shadow: none; }
+.neon-purple { color: var(--primary); text-shadow: none; }
