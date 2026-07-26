@@ -97,7 +97,24 @@ public class SimulacaoService {
                     if (fracao >= 1.0) {
                         drone.setStatus(StatusDrone.ENTREGANDO);
                         System.out.println("Drone " + drone.getId() + " chegou no destino e está entregando.");
-                        // Pedidos permanecem EM_TRANSITO até o ciclo do voo ser concluído (drone retornar à base)
+
+                        // Requisitos 1 e 4: assim que o pacote é entregue no destino (fase ENTREGANDO),
+                        // o pedido é IMEDIATAMENTE marcado como ENTREGUE e o registro de Entrega (histórico)
+                        // é criado e persistido, sem esperar o drone retornar à base (0,0) ou recarregar.
+                        Entrega entrega = new Entrega();
+                        entrega.setId("ENT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+                        entrega.setDataHora(LocalDateTime.now());
+                        entrega.setDroneId(drone.getId());
+                        entrega.setDroneCodigo(drone.getCodigo());
+                        entrega.setDistanciaTotal(voo.getDistanciaTotalPrevistaKm());
+                        entrega = entregaRepository.save(entrega);
+
+                        for (Pedido p : voo.getPedidos()) {
+                            p.setStatus(StatusPedido.ENTREGUE);
+                            p.setDataFinalizacao(LocalDateTime.now());
+                            p.setEntrega(entrega);
+                            pedidoRepository.save(p);
+                        }
                     }
                     droneRepository.save(drone);
                 } 
@@ -114,7 +131,13 @@ public class SimulacaoService {
                     drone.setPosY(destinoY + (baseY - destinoY) * fracao);
 
                     if (fracao >= 1.0) {
-                        double autonomiaRestante = (drone.getAutonomiaAtualKm() != null ? drone.getAutonomiaAtualKm() : 0.0) - (voo.getDistanciaTotalPrevistaKm() != null ? voo.getDistanciaTotalPrevistaKm() : 0.0);
+                        double distanciaTotalPrevista = voo.getDistanciaTotalPrevistaKm() != null ? voo.getDistanciaTotalPrevistaKm() : 0.0;
+                        double pesoTotalCarregado = voo.getPesoTotalCarregadoKg() != null ? voo.getPesoTotalCarregadoKg() : 0.0;
+                        double capacidadeMaxima = drone.getCapacidadeMaximaKg() != null ? drone.getCapacidadeMaximaKg() : 0.0;
+                        // Consumo de bateria ponderado pelo peso transportado (Requisito 5): cargas mais
+                        // pesadas em relação à capacidade máxima do drone consomem proporcionalmente mais autonomia.
+                        double consumoBateriaKm = calcularConsumoBateriaKm(distanciaTotalPrevista, pesoTotalCarregado, capacidadeMaxima);
+                        double autonomiaRestante = (drone.getAutonomiaAtualKm() != null ? drone.getAutonomiaAtualKm() : 0.0) - consumoBateriaKm;
                         drone.setAutonomiaAtualKm(Math.max(autonomiaRestante, 0.0));
                         drone.setStatus(StatusDrone.RECARREGANDO);
                         drone.setPosX(baseX);
@@ -123,24 +146,7 @@ public class SimulacaoService {
 
                         voo.setStatus(StatusVoo.CONCLUIDO);
                         voo.setDataHoraChegada(LocalDateTime.now());
-
-                        // Cria o registro agrupado da entrega (viagem) e finaliza os pedidos vinculados a ele
-                        Entrega entrega = new Entrega();
-                        entrega.setId("ENT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-                        entrega.setDataHora(LocalDateTime.now());
-                        entrega.setDroneId(drone.getId());
-                        entrega.setDroneCodigo(drone.getCodigo());
-                        entrega.setDistanciaTotal(voo.getDistanciaTotalPrevistaKm());
-                        entrega = entregaRepository.save(entrega);
-
-                        // Pedido só é marcado como ENTREGUE quando o ciclo do voo se completa (drone de volta à base)
-                        for (Pedido p : voo.getPedidos()) {
-                            p.setStatus(StatusPedido.ENTREGUE);
-                            p.setDataFinalizacao(LocalDateTime.now());
-                            p.setEntrega(entrega);
-                            pedidoRepository.save(p);
-                        }
-
+                        // Pedidos e o registro de Entrega já foram finalizados no momento da chegada ao destino (fase ENTREGANDO).
                         vooRepository.save(voo);
                     }
                     droneRepository.save(drone);
@@ -187,6 +193,13 @@ public class SimulacaoService {
         return Math.min(1.0, horasDecorridas / duracaoPernaHoras);
     }
 
+    // Requisito 5: consumo de bateria (em km equivalentes) de uma viagem, ponderado pelo peso transportado —
+    // cargas mais próximas da capacidade máxima do drone consomem proporcionalmente mais autonomia por km.
+    private double calcularConsumoBateriaKm(double distanciaTotalKm, double pesoTotalKg, double capacidadeMaximaKg) {
+        double fatorPeso = capacidadeMaximaKg > 0 ? 1.0 + 0.3 * Math.min(1.0, pesoTotalKg / capacidadeMaximaKg) : 1.0;
+        return distanciaTotalKm * fatorPeso;
+    }
+
     // Snapshot leve (sem proxies/entidades lazy) usado tanto no broadcast periódico quanto na conexão inicial do SSE.
     // @Transactional garante que coleções lazy (ex.: Entrega.pedidos) possam ser acessadas com segurança
     // mesmo quando chamado fora do tick agendado (ex.: na conexão inicial do SSE).
@@ -196,8 +209,27 @@ public class SimulacaoService {
     }
 
     private Map<String, Object> construirSnapshot() {
+        List<Voo> voosEmAndamento = vooRepository.findAll().stream()
+                .filter(v -> v.getStatus() == StatusVoo.EM_ANDAMENTO)
+                .toList();
+
+        // Requisito 3: mapa efêmero (por drone) apenas com os pedidos AINDA em trânsito (EM_TRANSITO).
+        // É recalculado a cada tick e nunca conserva pedidos já entregues (ENTREGUE) — assim que o pedido
+        // é finalizado (fase ENTREGANDO) ou o voo conclui, ele desaparece imediatamente da lista do drone.
+        Map<Long, List<String>> pedidosEmVooPorDrone = new LinkedHashMap<>();
+        for (Voo voo : voosEmAndamento) {
+            if (voo.getDrone() == null || voo.getPedidos() == null) continue;
+            List<String> numeros = voo.getPedidos().stream()
+                    .filter(p -> p.getStatus() == StatusPedido.EM_TRANSITO)
+                    .map(p -> p.getNumeroPedido() != null ? p.getNumeroPedido() : ("#" + p.getId()))
+                    .toList();
+            pedidosEmVooPorDrone.put(voo.getDrone().getId(), numeros);
+        }
+
         Map<String, Object> snapshot = new LinkedHashMap<>();
-        snapshot.put("drones", droneRepository.findAll().stream().map(this::mapDrone).toList());
+        snapshot.put("drones", droneRepository.findAll().stream()
+                .map(d -> mapDrone(d, pedidosEmVooPorDrone.getOrDefault(d.getId(), List.of())))
+                .toList());
         snapshot.put("pedidos", pedidoRepository.findAllByOrderByDataCriacaoDesc().stream().map(this::mapPedido).toList());
         snapshot.put("voos", vooRepository.findAll().stream().map(this::mapVoo).toList());
         // Histórico de entregas concluídas é enviado em todo tick para refletir novas entregas
@@ -206,7 +238,7 @@ public class SimulacaoService {
         return snapshot;
     }
 
-    private Map<String, Object> mapDrone(Drone d) {
+    private Map<String, Object> mapDrone(Drone d, List<String> pedidosNoVoo) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", d.getId());
         m.put("codigo", d.getCodigo());
@@ -219,6 +251,7 @@ public class SimulacaoService {
         m.put("baseY", d.getBaseY());
         m.put("posX", d.getPosX() != null ? d.getPosX() : d.getBaseX());
         m.put("posY", d.getPosY() != null ? d.getPosY() : d.getBaseY());
+        m.put("pedidosNoVoo", pedidosNoVoo);
         return m;
     }
 

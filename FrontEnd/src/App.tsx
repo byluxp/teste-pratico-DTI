@@ -44,24 +44,18 @@ function App() {
   }, []);
 
   // Drones e pedidos agora chegam em tempo real via SSE (useSimulacaoStream),
-  // substituindo o polling HTTP anterior.
+  // substituindo o polling HTTP anterior. O campo `pedidosNoVoo` já vem calculado pelo backend
+  // (Requisito 3), contendo APENAS os pedidos ainda em trânsito (EM_TRANSITO) de voos ativos —
+  // é recalculado a cada tick e nunca preserva pedidos já entregues no card do drone.
   useEffect(() => {
-    const dronesComPedidos = dronesStream.map((drone: any) => {
-      const pedidosDoDrone = voos
-        .filter((voo: any) => String(voo?.drone?.id ?? '') === String(drone.id))
-        .flatMap((voo: any) => Array.isArray(voo?.pedidos) ? voo.pedidos : [])
-        .map((pedido: any) => pedido?.numeroPedido ?? `#${pedido?.id}`)
-        .filter(Boolean);
-
-      return {
-        ...drone,
-        codigo: drone.codigo ?? `DD${drone.id}`,
-        pedidosNoVoo: pedidosDoDrone
-      };
-    });
+    const dronesComPedidos = dronesStream.map((drone: any) => ({
+      ...drone,
+      codigo: drone.codigo ?? `DD${drone.id}`,
+      pedidosNoVoo: Array.isArray(drone.pedidosNoVoo) ? drone.pedidosNoVoo : []
+    }));
 
     setDrones(dronesComPedidos);
-  }, [dronesStream, voos]);
+  }, [dronesStream]);
 
   useEffect(() => {
     setPedidos(pedidosStream);

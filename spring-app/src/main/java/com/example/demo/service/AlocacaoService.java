@@ -19,6 +19,10 @@ public class AlocacaoService {
     private static final double PESO_EPSILON_KG = 1e-6;
     private static final double DISTANCIA_EPSILON_KM = 1e-6;
 
+    // Requisito 5: margem mínima de segurança de bateria (%) que deve restar ao final da viagem para que
+    // um drone ainda em recarga (RECARREGANDO) possa ser despachado de forma antecipada com um pedido ALTA.
+    private static final double BATERIA_SEGURANCA_MINIMA_PCT = 15.0;
+
     private final PedidoRepository pedidoRepository;
     private final DroneRepository droneRepository;
     private final VooRepository vooRepository;
@@ -35,9 +39,14 @@ public class AlocacaoService {
     @Transactional
     public List<Voo> alocarPedidos() {
         List<Voo> voosCriados = new ArrayList<>();
-        // DD01 tem prioridade de alocação; DD02 só é usado se DD01 estiver ocupado/sem bateria suficiente
+        // DD01 tem prioridade de alocação; DD02 só é usado se DD01 estiver ocupado/sem bateria suficiente.
+        // Requisito 5: drones RECARREGANDO (bateria parcial) também entram como candidatos, pois podem ser
+        // despachados de forma antecipada (pré-empção) para pedidos de prioridade ALTA, desde que a viagem
+        // deixe uma margem de segurança de bateria ao final. Pedidos MEDIA/BAIXA ignoram esses drones e
+        // aguardam a recarga completa (100%) antes do despacho.
         List<Drone> dronesDisponiveis = droneRepository.findAll().stream()
-                .filter(d -> d.getStatus() == StatusDrone.IDLE && (d.getAutonomiaAtualKm() == null || d.getAutonomiaAtualKm() > 0.0))
+                .filter(d -> (d.getStatus() == StatusDrone.IDLE || d.getStatus() == StatusDrone.RECARREGANDO)
+                        && (d.getAutonomiaAtualKm() == null || d.getAutonomiaAtualKm() > 0.0))
                 .sorted(Comparator.comparing(Drone::getCodigo, Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
 
@@ -58,6 +67,11 @@ public class AlocacaoService {
         for (Drone drone : dronesDisponiveis) {
             if (pedidosPendentes.isEmpty()) break;
 
+            boolean droneEmRecarga = drone.getStatus() == StatusDrone.RECARREGANDO;
+            double autonomiaAtualKm = drone.getAutonomiaAtualKm() != null ? drone.getAutonomiaAtualKm() : 0.0;
+            double autonomiaMaximaKm = drone.getAutonomiaMaximaKm() != null ? drone.getAutonomiaMaximaKm() : 16.0;
+            double capacidadeMaximaKg = drone.getCapacidadeMaximaKg() != null ? drone.getCapacidadeMaximaKg() : 0.0;
+
             List<Pedido> pedidosAlocados = new ArrayList<>();
             double pesoAtual = 0.0;
             double baseX = drone.getBaseX() != null ? drone.getBaseX() : 0.0;
@@ -67,6 +81,12 @@ public class AlocacaoService {
             double distanciaTotalPrevista = 0.0;
 
             for (Pedido pedido : new ArrayList<>(pedidosPendentes)) {
+                // Requisito 5: enquanto o drone ainda está RECARREGANDO (bateria parcial), apenas pedidos de
+                // prioridade ALTA podem preemptar a recarga. MEDIA/BAIXA aguardam a bateria atingir 100%.
+                if (droneEmRecarga && pedido.getPrioridade() != PrioridadePedido.ALTA) {
+                    continue;
+                }
+
                 // Regra 1: a soma dos pesos do voo não pode ultrapassar a capacidade máxima do drone (com tolerância de ponto flutuante)
                 if (pesoAtual + pedido.getPeso() > drone.getCapacidadeMaximaKg() + PESO_EPSILON_KG) {
                     continue;
@@ -77,14 +97,27 @@ public class AlocacaoService {
                 
                 double distanciaDeVoltaAntiga = calcularDistanciaComObstaculos(xAtual, yAtual, baseX, baseY, obstaculos);
                 double novaDistanciaTotal = distanciaTotalPrevista - distanciaDeVoltaAntiga + distanciaParaPedido + distanciaDeVolta;
+                double novoPesoTotal = pesoAtual + pedido.getPeso();
 
-                double autonomiaDisponivelKm = Math.min(
-                        drone.getAutonomiaAtualKm() != null ? drone.getAutonomiaAtualKm() : 0.0,
-                        drone.getAutonomiaMaximaKm() != null ? drone.getAutonomiaMaximaKm() : 16.0
-                );
+                double autonomiaDisponivelKm = Math.min(autonomiaAtualKm, autonomiaMaximaKm);
+                // Requisito 5: consumo de bateria estimado para a viagem, ponderado pela distância total E pelo peso
+                // transportado (cargas próximas da capacidade máxima do drone consomem proporcionalmente mais autonomia).
+                double consumoBateriaKm = calcularConsumoBateriaKm(novaDistanciaTotal, novoPesoTotal, capacidadeMaximaKg);
 
-                // Regra 2: a distância total da rota (ida + entre clientes + volta) não pode ultrapassar a autonomia do drone
-                if (novaDistanciaTotal <= autonomiaDisponivelKm + DISTANCIA_EPSILON_KM) {
+                boolean cabeNaAutonomia = consumoBateriaKm <= autonomiaDisponivelKm + DISTANCIA_EPSILON_KM;
+
+                if (droneEmRecarga) {
+                    // Só despacha antecipadamente (antes de completar a recarga) se, após a viagem completa
+                    // (ida + volta), restar mais que a margem mínima de segurança de bateria (>15%).
+                    double autonomiaAposViagem = autonomiaAtualKm - consumoBateriaKm;
+                    double percentualRestante = autonomiaMaximaKm > 0 ? (autonomiaAposViagem / autonomiaMaximaKm) * 100.0 : 0.0;
+                    boolean margemSeguraAtendida = autonomiaAposViagem >= 0 && percentualRestante > BATERIA_SEGURANCA_MINIMA_PCT;
+                    cabeNaAutonomia = cabeNaAutonomia && margemSeguraAtendida;
+                }
+
+                // Regra 2: a distância total da rota (ida + entre clientes + volta), convertida em consumo de
+                // bateria, não pode ultrapassar a autonomia disponível do drone
+                if (cabeNaAutonomia) {
                     pedidosAlocados.add(pedido);
                     pesoAtual += pedido.getPeso();
                     distanciaTotalPrevista = novaDistanciaTotal;
@@ -149,6 +182,13 @@ public class AlocacaoService {
             case MEDIA -> 1;
             case BAIXA -> 2;
         };
+    }
+
+    // Requisito 5: consumo de bateria (em km equivalentes) de uma viagem, ponderado pelo peso transportado —
+    // cargas mais próximas da capacidade máxima do drone consomem proporcionalmente mais autonomia por km.
+    private double calcularConsumoBateriaKm(double distanciaTotalKm, double pesoTotalKg, double capacidadeMaximaKg) {
+        double fatorPeso = capacidadeMaximaKg > 0 ? 1.0 + 0.3 * Math.min(1.0, pesoTotalKg / capacidadeMaximaKg) : 1.0;
+        return distanciaTotalKm * fatorPeso;
     }
 
     private double calcularDistanciaComObstaculos(double x1, double y1, double x2, double y2, List<Obstaculo> obstaculos) {

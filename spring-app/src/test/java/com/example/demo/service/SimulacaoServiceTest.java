@@ -83,20 +83,24 @@ class SimulacaoServiceTest {
     }
 
     @Test
-    void deveTransitarDeEmVooParaEntregandoSemFinalizarPedido() {
+    void deveTransitarDeEmVooParaEntregandoEFinalizarPedidoImediatamente() {
         voo.setStatus(StatusVoo.EM_ANDAMENTO);
         drone.setStatus(StatusDrone.EM_VOO);
 
         when(vooRepository.findAll()).thenReturn(List.of(voo));
+        when(entregaRepository.save(any(Entrega.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         simulacaoService.simularTempo();
 
         assertEquals(StatusDrone.ENTREGANDO, drone.getStatus());
-        // Pedido só deve ser finalizado quando o voo concluir o ciclo (drone de volta à base)
-        assertEquals(StatusPedido.EM_TRANSITO, pedido.getStatus());
+        // Requisitos 1 e 4: o pedido é finalizado (ENTREGUE) e o registro de Entrega é criado imediatamente
+        // ao chegar no destino, sem esperar o drone retornar à base.
+        assertEquals(StatusPedido.ENTREGUE, pedido.getStatus());
+        assertEquals(pedido.getEntrega() != null, true);
 
         verify(droneRepository).save(drone);
-        verify(pedidoRepository, never()).save(pedido);
+        verify(entregaRepository).save(any(Entrega.class));
+        verify(pedidoRepository).save(pedido);
     }
 
     @Test
@@ -114,9 +118,11 @@ class SimulacaoServiceTest {
     }
 
     @Test
-    void deveTransitarDeRetornandoParaRecarregandoEFinalizarPedido() {
+    void deveTransitarDeRetornandoParaRecarregandoSemRefinalizarPedido() {
         voo.setStatus(StatusVoo.EM_ANDAMENTO);
         drone.setStatus(StatusDrone.RETORNANDO);
+        // Requisitos 1 e 4: o pedido já foi finalizado (ENTREGUE) na fase ENTREGANDO, antes do retorno à base.
+        pedido.setStatus(StatusPedido.ENTREGUE);
 
         when(vooRepository.findAll()).thenReturn(List.of(voo));
 
@@ -125,13 +131,13 @@ class SimulacaoServiceTest {
         assertEquals(StatusDrone.RECARREGANDO, drone.getStatus());
         assertEquals(StatusVoo.CONCLUIDO, voo.getStatus());
         assertEquals(StatusPedido.ENTREGUE, pedido.getStatus());
-        assertEquals(10L, pedido.getId());
-        
-        // Autonomia inicial era 50, viagem era 20
+
+        // Autonomia inicial era 50, viagem era 20 (peso total não definido no voo -> sem penalidade extra)
         assertEquals(30.0, drone.getAutonomiaAtualKm());
 
         verify(vooRepository).save(voo);
         verify(droneRepository, atLeastOnce()).save(drone);
-        verify(pedidoRepository).save(pedido);
+        verify(entregaRepository, never()).save(any());
+        verify(pedidoRepository, never()).save(pedido);
     }
 }

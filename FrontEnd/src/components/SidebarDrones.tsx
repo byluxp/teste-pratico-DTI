@@ -23,7 +23,10 @@ export default function SidebarDrones({ drones }: SidebarDronesProps) {
             if (batteryPct < 25) BatteryIcon = BatteryLow;
             const status = String(drone.status ?? '').toUpperCase();
             const label = status === 'INDISPONIVEL' ? 'INDISPONÍVEL' : status;
-            const mostrarPedidos = status === 'EM_VOO' || status === 'ENTREGANDO' || status === 'RETORNANDO';
+            // Requisito 3: card do drone exibe SOMENTE pedidos em voo (EM_VOO/ENTREGANDO). Assim que o
+            // pedido é entregue ou o drone passa para RETORNANDO/IDLE, `pedidosNoVoo` (vindo do backend,
+            // recalculado a cada tick) já chega vazio — não há histórico persistido neste card.
+            const mostrarPedidos = (status === 'EM_VOO' || status === 'ENTREGANDO') && !!drone.pedidosNoVoo?.length;
             const pedidosNoVoo = drone.pedidosNoVoo?.length ? drone.pedidosNoVoo.join(', ') : 'Nenhum pedido alocado';
 
             return (
