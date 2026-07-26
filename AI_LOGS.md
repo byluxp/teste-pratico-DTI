@@ -95,31 +95,39 @@ Durante o processo de desenvolvimento, as seguintes regras de negócio e conceit
 ## 🛠️ Resumo das Alterações Realizadas no Projeto
 
 ### Backend (Java Spring Boot)
-- **Model / Entity:** Criação da entidade JPA `Pedido` mapeada para a tabela PostgreSQL, contendo campos para ID, número do pedido, peso, distância, status e timestamps (`dataCriacao`, `dataFinalizacao`).
-- **Repository:** Interface `PedidoRepository` via `JpaRepository` para operações de CRUD.
+- **Model / Entity / DTOs:**
+  - Criação da entidade JPA `Pedido` mapeada para PostgreSQL (ID, número, peso, distância, status e timestamps `dataCriacao` / `dataFinalizacao`).
+  - Criação da nova entidade/conceito `Entrega`, com ID aleatório único, para agrupar e consolidar múltiplos pedidos vinculados a uma mesma viagem (suportando transporte individual ou compartilhado).
+- **Repository:**
+  - Interfaces de repositório JPA (`PedidoRepository` e `EntregaRepository`) para operações de CRUD e consultas do histórico.
 - **Service & Controller:**
-  - Endpoint `POST /api/pedidos` para registro de novos pedidos com geração automática de código único.
-  - Endpoint `PUT /api/pedidos/{id}/finalizar` para registrar a entrega concluída e salvar timestamp de finalização.
-  - Endpoint `GET /api/pedidos` para consulta do histórico de entregas.
-  - Endpoint de métricas da frota para expor tempo médio de viagem e cálculo do drone mais eficiente.
-- **Gestão de Bateria & Alocação:**
-  - Implementação do robô/agendador de recarga automática de bateria e validação de autonomia mínima no `AlocacaoService`.
-  - Priorização na ordem de seleção de drones (`DD01` primeiro, transbordo para `DD02`).
+  - Endpoints REST para criação (`POST /api/pedidos`), consulta de histórico (`GET /api/pedidos`) e finalização.
+  - Otimização do tempo de voo e taxa de simulação, tornando os percursos mais ágeis para testes e avaliações.
+  - Implementação do **Sistema de Comunicação em Tempo Real (SSE / WebSockets)** para transmissão instantânea da telemetria e posições 2D dos drones, substituindo o polling HTTP.
+- **Regras de Negócio, Carga & Bateria Avançada:**
+  - **Limite Estrito de Carga Agrupada:** Trava de segurança no `AlocacaoService` garantindo que o peso somado de múltiplos pedidos na mesma viagem jamais ultrapasse o limite de 2,5 kg.
+  - **Cálculo de Autonomia por Viagem:** Algoritmo que calcula o consumo estimado de bateria com base no peso e distância.
+  - **Despacho Prioritário por Bateria:** Pedidos de **Prioridade ALTA** são despachados imediatamente antes da recarga completa caso a bateria atual seja suficiente para cobrir o percurso com segurança (pedidos de prioridade Média e Baixa mantêm a exigência de recarga total).
+  - **Bases Distintas e Recarga:** Inicialização dos drones em pontos/bases distintos (`DD01` e `DD02`) com retorno obrigatório à sua base de origem e recarga gradual (+5% em +5%).
+
+---
 
 ### Frontend (React + TypeScript)
-- **Aba de Histórico (`HistoricoPedidos.tsx`):** Visualização em tabela/cards dedicada aos pedidos finalizados, listando ID, data de criação, data de entrega, peso e distância.
-- **Visual e Tipografia (`Chakra Petch`):** Importação da fonte geométrica via Google Fonts e padronização visual com bordas retas (`border-radius: 0px`).
-- **Navegação e Layout:**
-  - Header reorganizado com alinhamento do título "Dronelivery".
-  - Barra de métricas contínua ("Drones Disponíveis", "Drones em Voo", "Tempo Médio", "Entregas Concluídas", "Drone Eficiente") integrada sem cards isolados.
-  - Reordenação da sidebar de pedidos ("Iniciar Entregas" e "Novo Pedido" posicionados acima de "Gerar Pedidos Aleatórios").
-  - Estilo *Borderless*: Eliminação de caixas brancas com bordas pesadas para integração fluida com o fundo da página.
-- **Modal de Informações e Especificações:**
-  - Pop-up "Especificações do Serviço" (regras técnicas de BH, raio de 8km ida + 8km volta, peso máximo de 2.5kg).
-  - Terceiro botão/modal "Informações sobre os Drones" trazendo dados consolidados de eficiência e tempo médio por viagem.
-- **Gerador de Pedidos Aleatórios:**
-  - Aplicação de teto máximo de 2.5 kg por pacote e 8 km de raio por pedido gerado.
-- **Mapa e Animação de Drones (`MapGrid` / `DroneMarker`):**
-  - Estilização escura (*Dark Mode* `#111827`) focada exclusivamente no `MapGrid`.
-  - Ícone de drone acompanhando o vetor de movimento durante a simulação de voo.
-  - Ícone de base de carregamento (*Charger*) posicionado no ponto de origem com efeito visual animado de pulso/neon de recarga.
+- **Histórico e Persistência Imediata (`HistoricoPedidos.tsx`):**
+  - Registro de pedidos e entregas no Histórico ativado **imediatamente ao alcançar a fase 'Entregando' / ponto de destino**, sem depender do retorno ou recarga total do drone.
+  - Remoção automática e imediata do pedido do painel "Pedidos em Voo" assim que o status passa para entregue.
+  - Exibição de dados consolidados da `Entrega` (ID aleatório e lista de pedidos associados).
+- **Indicadores Visuais e Monitoramento:**
+  - **Barra de Progresso da Entrega:** Implementação de barra de progresso visual em tempo real para cada pedido em voo, refletindo a distância percorrida da base até a conclusão do trajeto de ida (validado para múltiplos pedidos simultâneos).
+  - Exibição da distância a ser percorrida nos cards da "Fila de Entregas" e "Pedidos em Voo".
+- **Painel 'Frota de Drones':**
+  - Exibição estritamente dos pedidos em transporte ativo no momento.
+  - Limpeza automática das informações de pedidos assim que o status muda para entregue ou o drone entra em modo de retorno/recarga (sem retenção de histórico nesta aba).
+- **Navegação, Layout e UX (Estilo Moderno / Fundo Claro):**
+  - Refatoração visual com paleta limpa/fundo claro (*Off-White* / Branco) e destaque centralizado/ampliado no `MapGrid`.
+  - Reorganização do Header: consolidação do "Tempo Médio" e "Drone Eficiente" dentro do modal "Informações sobre os Drones", posicionado ao lado da aba "Histórico de Pedidos".
+  - **Ações Silenciosas:** Remoção de modais/cards pop-up ao clicar em "Gerar Pedidos Aleatórios" para inserção direta na fila.
+  - Redução no tamanho das setas e botões de controle de navegação do mapa.
+- **Animações e Interpolação:**
+  - Renderização fluida da movimentação dos drones via SSE/WebSockets no mapa 2D com transições suaves (`requestAnimationFrame` / CSS transitions).
+  - Manutenção da estilização *Dark Mode* (`#111827`) focada exclusivamente na área interna da grade do mapa (`MapGrid`), garantindo alto contraste.
