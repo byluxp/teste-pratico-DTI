@@ -13,7 +13,7 @@ import type { Pedido, Drone, Obstaculo } from './types';
 import { useSimulacaoStream } from './hooks/useSimulacaoStream';
 
 function App() {
-  const { drones: dronesStream, pedidos: pedidosStream, voos } = useSimulacaoStream();
+  const { drones: dronesStream, pedidos: pedidosStream, voos, entregas } = useSimulacaoStream();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [drones, setDrones] = useState<Drone[]>([]);
   const [obstaculos, setObstaculos] = useState<Obstaculo[]>([]);
@@ -22,7 +22,13 @@ function App() {
   const [modalEspecificacoes, setModalEspecificacoes] = useState(false);
   const [modalInfoDrones, setModalInfoDrones] = useState(false);
   const [metricasDrones, setMetricasDrones] = useState<any>(null);
-  const [pedidosGerados, setPedidosGerados] = useState<any[] | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   const fetchObstaculos = async () => {
     try {
@@ -92,7 +98,6 @@ function App() {
 
   const handleGerarPedidosAleatorios = async () => {
     const DISTANCIA_MAX_KM = 8; // raio máximo, garante ida + volta <= 16 km
-    const gerados: any[] = [];
     for (let i = 0; i < 5; i++) {
       const angulo = Math.random() * (Math.PI / 2); // quadrante positivo (0-90°)
       const raio = Math.random() * DISTANCIA_MAX_KM;
@@ -102,9 +107,8 @@ function App() {
       const prioridade = ['ALTA', 'MEDIA', 'BAIXA'][Math.floor(Math.random() * 3)];
 
       await handleAddPedido({ coordenadaX, coordenadaY, peso, prioridade });
-      gerados.push({ coordenadaX, coordenadaY, peso, distancia: parseFloat(raio.toFixed(2)), prioridade });
     }
-    setPedidosGerados(gerados);
+    setToast('5 pedidos aleatórios gerados e adicionados à fila.');
   };
 
   const handleIniciarEntregas = async () => {
@@ -211,7 +215,7 @@ function App() {
         </>
       ) : (
         <main className="main-content historico-view glass-panel">
-          <HistoricoPedidos />
+          <HistoricoPedidos entregas={entregas} />
         </main>
       )}
 
@@ -247,21 +251,7 @@ function App() {
         </div>
       )}
 
-      {pedidosGerados && (
-        <div className="modal-overlay" onClick={() => setPedidosGerados(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3>Pedidos Gerados Aleatoriamente</h3>
-            <ul>
-              {pedidosGerados.map((p, i) => (
-                <li key={i}>
-                  <strong>Peso:</strong> {p.peso} kg · <strong>Distância até o destino:</strong> {p.distancia} km · <strong>Coordenadas:</strong> ({p.coordenadaX}, {p.coordenadaY})
-                </li>
-              ))}
-            </ul>
-            <button className="btn-iniciar-entrega" onClick={() => setPedidosGerados(null)}>Fechar</button>
-          </div>
-        </div>
-      )}
+      {toast && <div className="toast-notification">{toast}</div>}
     </div>
   );
 }

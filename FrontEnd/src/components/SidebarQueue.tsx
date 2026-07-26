@@ -71,6 +71,9 @@ export default function SidebarQueue({ pedidos, drones, voos, onAddPedido }: Sid
                   <Package size={16} />
                   <span>Peso: {pedido.peso} kg</span>
                 </div>
+                <div className="pedido-body">
+                  <span>Distância até o destino: {pedido.distancia?.toFixed(2) ?? '—'} km</span>
+                </div>
                 <div className="pedido-footer">
                   Status: {pedido.status}
                 </div>
@@ -97,6 +100,9 @@ export default function SidebarQueue({ pedidos, drones, voos, onAddPedido }: Sid
                 <div className="pedido-body">
                   <Plane size={16} />
                   <span>Peso: {pedido.peso} kg</span>
+                </div>
+                <div className="pedido-body">
+                  <span>Distância até o destino: {pedido.distancia?.toFixed(2) ?? '—'} km</span>
                 </div>
                 {progresso && progresso.visivel && (
                   <div className="progress-bar-wrapper">

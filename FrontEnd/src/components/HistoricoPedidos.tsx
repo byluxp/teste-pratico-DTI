@@ -1,5 +1,3 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
 import type { Entrega } from '../types';
 import './HistoricoPedidos.css';
 
@@ -15,35 +13,13 @@ const formatarData = (valor?: string | null) => {
   }).format(data);
 };
 
-function HistoricoPedidos() {
-  const [entregas, setEntregas] = useState<Entrega[]>([]);
-  const [carregando, setCarregando] = useState(true);
+interface HistoricoPedidosProps {
+  entregas: Entrega[];
+}
 
-  useEffect(() => {
-    const carregarHistorico = async () => {
-      try {
-        setCarregando(true);
-
-        const resposta = await axios
-          .get('http://localhost:8080/entregas/historico')
-          .catch(() => ({ data: [] }));
-
-        setEntregas(Array.isArray(resposta.data) ? resposta.data : []);
-      } catch (erro) {
-        console.error('Erro ao carregar histórico:', erro);
-        setEntregas([]);
-      } finally {
-        setCarregando(false);
-      }
-    };
-
-    carregarHistorico();
-  }, []);
-
-  if (carregando) {
-    return <div className="historico-card historico-empty">Carregando histórico...</div>;
-  }
-
+// Recebe as entregas via SSE (useSimulacaoStream, no App.tsx), garantindo que novos registros
+// apareçam imediatamente assim que um voo é concluído, sem refresh manual ou polling.
+function HistoricoPedidos({ entregas }: HistoricoPedidosProps) {
   if (!entregas.length) {
     return <div className="historico-card historico-empty">Nenhuma entrega concluída foi encontrada.</div>;
   }

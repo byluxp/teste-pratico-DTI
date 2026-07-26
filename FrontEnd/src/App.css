@@ -69,6 +69,20 @@
   margin: 12px 0 16px;
 }
 
+.toast-notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #111827;
+  color: #ffffff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+  font-size: 0.9rem;
+  z-index: 1000;
+  pointer-events: none;
+}
+
 .header-metrics-wrap {
   flex: 1;
   display: flex;

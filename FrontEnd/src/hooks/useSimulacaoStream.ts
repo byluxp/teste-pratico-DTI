@@ -6,6 +6,7 @@ interface SimulacaoSnapshot {
   drones: any[];
   pedidos: any[];
   voos: any[];
+  entregas: any[];
 }
 
 /**
@@ -17,6 +18,7 @@ export function useSimulacaoStream() {
   const [drones, setDrones] = useState<any[]>([]);
   const [pedidos, setPedidos] = useState<any[]>([]);
   const [voos, setVoos] = useState<any[]>([]);
+  const [entregas, setEntregas] = useState<any[]>([]);
   const [conectado, setConectado] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -32,6 +34,7 @@ export function useSimulacaoStream() {
         setDrones(Array.isArray(snapshot.drones) ? snapshot.drones : []);
         setPedidos(Array.isArray(snapshot.pedidos) ? snapshot.pedidos : []);
         setVoos(Array.isArray(snapshot.voos) ? snapshot.voos : []);
+        setEntregas(Array.isArray(snapshot.entregas) ? snapshot.entregas : []);
       } catch (e) {
         console.error('Erro ao processar evento SSE da simulação:', e);
       }
@@ -48,5 +51,5 @@ export function useSimulacaoStream() {
     };
   }, []);
 
-  return { drones, pedidos, voos, conectado };
+  return { drones, pedidos, voos, entregas, conectado };
 }

@@ -36,11 +36,15 @@ public class SimulacaoService {
     }
 
 
-    // Duração de cada tick da simulação (ms). Reduzida para 200ms para produzir
-    // movimento fluido e visível no mapa via SSE, mantendo a física (distância/velocidade) consistente.
-    private static final long TICK_MS = 200;
+    // Duração de cada tick da simulação (ms). Reduzida para 100ms para produzir
+    // movimento ainda mais fluido e responsivo no mapa via SSE.
+    private static final long TICK_MS = 100;
 
-    // Roda a cada 200ms para simular a passagem do tempo com movimento suave
+    // Multiplicador de velocidade da simulação: acelera o ciclo completo (ida + volta)
+    // sem alterar o valor real de velocidadeKmH do drone (usado em métricas/relatórios).
+    private static final double SPEED_MULTIPLIER = 6.0;
+
+    // Roda a cada 100ms para simular a passagem do tempo com movimento suave e acelerado
     @Scheduled(fixedRate = TICK_MS)
     @Transactional
     public void simularTempo() {
@@ -66,7 +70,7 @@ public class SimulacaoService {
             }
             // Cada perna (ida/volta) corresponde a metade da distância total prevista da rota
             double distanciaPerna = (voo.getDistanciaTotalPrevistaKm() != null ? voo.getDistanciaTotalPrevistaKm() : 0.0) / 2.0;
-            double velocidade = drone.getVelocidadeKmH() != null && drone.getVelocidadeKmH() > 0 ? drone.getVelocidadeKmH() : 40.0;
+            double velocidade = (drone.getVelocidadeKmH() != null && drone.getVelocidadeKmH() > 0 ? drone.getVelocidadeKmH() : 40.0) * SPEED_MULTIPLIER;
 
             if (voo.getStatus() == StatusVoo.CRIADO) {
                 voo.setStatus(StatusVoo.EM_ANDAMENTO);
@@ -154,7 +158,7 @@ public class SimulacaoService {
             double autonomiaAtual = drone.getAutonomiaAtualKm() != null ? drone.getAutonomiaAtualKm() : 0.0;
             // Taxa de recarga: 0.5% da autonomia por segundo (equivalente aos antigos 5% a cada 10s),
             // agora aplicada proporcionalmente à duração real do tick para manter o tempo total de recarga.
-            double incrementoPorTick = autonomiaMaxima * 0.005 * (TICK_MS / 1000.0);
+            double incrementoPorTick = autonomiaMaxima * 0.005 * (TICK_MS / 1000.0) * SPEED_MULTIPLIER;
             double novaAutonomia = Math.min(autonomiaAtual + incrementoPorTick, autonomiaMaxima);
 
             drone.setAutonomiaAtualKm(novaAutonomia);
@@ -183,7 +187,10 @@ public class SimulacaoService {
         return Math.min(1.0, horasDecorridas / duracaoPernaHoras);
     }
 
-    // Snapshot leve (sem proxies/entidades lazy) usado tanto no broadcast periódico quanto na conexão inicial do SSE
+    // Snapshot leve (sem proxies/entidades lazy) usado tanto no broadcast periódico quanto na conexão inicial do SSE.
+    // @Transactional garante que coleções lazy (ex.: Entrega.pedidos) possam ser acessadas com segurança
+    // mesmo quando chamado fora do tick agendado (ex.: na conexão inicial do SSE).
+    @Transactional(readOnly = true)
     public Map<String, Object> obterSnapshotAtual() {
         return construirSnapshot();
     }
@@ -193,6 +200,9 @@ public class SimulacaoService {
         snapshot.put("drones", droneRepository.findAll().stream().map(this::mapDrone).toList());
         snapshot.put("pedidos", pedidoRepository.findAllByOrderByDataCriacaoDesc().stream().map(this::mapPedido).toList());
         snapshot.put("voos", vooRepository.findAll().stream().map(this::mapVoo).toList());
+        // Histórico de entregas concluídas é enviado em todo tick para refletir novas entregas
+        // imediatamente na aba de Histórico, sem necessidade de polling ou refresh manual.
+        snapshot.put("entregas", entregaRepository.findAllByOrderByDataHoraDesc().stream().map(this::mapEntrega).toList());
         return snapshot;
     }
 
@@ -224,6 +234,17 @@ public class SimulacaoService {
         m.put("status", p.getStatus());
         m.put("dataCriacao", p.getDataCriacao());
         m.put("dataFinalizacao", p.getDataFinalizacao());
+        return m;
+    }
+
+    private Map<String, Object> mapEntrega(Entrega e) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", e.getId());
+        m.put("dataHora", e.getDataHora());
+        m.put("droneId", e.getDroneId());
+        m.put("droneCodigo", e.getDroneCodigo());
+        m.put("distanciaTotal", e.getDistanciaTotal());
+        m.put("pedidos", e.getPedidos() != null ? e.getPedidos().stream().map(this::mapPedido).toList() : List.of());
         return m;
     }
 
