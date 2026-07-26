@@ -60,22 +60,38 @@ A simulação é calibrada com base em parâmetros e restrições reais da opera
 
 ---
 
-## 🗄️ Caracterização do Banco de Dados (PostgreSQL + PostGIS)
+### 🗄️ Caracterização do Banco de Dados (PostgreSQL + PostGIS)
 
-Para suportar a auditoria e rastreabilidade, o banco mapeia as seguintes informações essenciais:
+#### 📋 Tabelas e Mapeamento de Entidades
 
-┌─────────────────────────┐          ┌─────────────────────────┐          ┌─────────────────────────┐
-│          DRONE          │          │         ENTREGA         │          │         PEDIDO          │
-├─────────────────────────┤          ├─────────────────────────┤          ├─────────────────────────┤
-│ [PK] id                 │          │ [PK] id                 │          │ [PK] id                 │
-│      codigo (e.g. DD01) │──(1:N)──>│      codigo_entrega     │──(1:N)──>│      numero_pedido      │
-│      bateria            │          │ [FK] drone_id           │          │ [FK] entrega_id         │
-│      status             │          │      data_inicio        │          │      peso               │
-│      base_origem        │          │      data_fim           │          │      distancia          │
-└─────────────────────────┘          └─────────────────────────┘          │      prioridade         │
-                                                                          │      status             │
-                                                                          └─────────────────────────┘
+| Tabela | Campo / Coluna | Tipo de Dado | Chave / Vínculo | Descrição / Exemplo |
+| :--- | :--- | :--- | :--- | :--- |
+| **`drones`** | `id` | `BIGINT` | **PK** | Identificador único do drone no banco. |
+| | `codigo` | `VARCHAR` | | Identificação operacional padronizada (ex: `DD01`, `DD02`). |
+| | `bateria` | `INTEGER` | | Porcentagem atual da carga de bateria (`0` a `100`). |
+| | `status` | `VARCHAR` | | Estado operacional (`IDLE`, `EM_VOO`, `RETORNANDO`, `INDISPONIVEL`). |
+| | `base_origem` | `VARCHAR` | | Identificador da base de partida e recarga associada. |
+| **`entregas`** | `id` | `BIGINT` | **PK** | Identificador único da missão/viagem. |
+| | `codigo_entrega` | `VARCHAR` | | Código/UUID único da viagem agrupada. |
+| | `drone_id` | `BIGINT` | **FK** (`drones.id`) | Drone responsável pela execução da viagem. |
+| | `data_inicio` | `TIMESTAMP` | | Horário de início do despacho/decolagem. |
+| | `data_fim` | `TIMESTAMP` | | Horário de conclusão total do ciclo. |
+| **`pedidos`** | `id` | `BIGINT` | **PK** | Identificador único do pedido. |
+| | `numero_pedido` | `VARCHAR` | | Código formatado de exibição (ex: `#PED-102`). |
+| | `entrega_id` | `BIGINT` | **FK** (`entregas.id`) | Vinculação com a entrega/viagem responsável (pode ser `NULL` na fila). |
+| | `peso` | `DECIMAL` | | Peso do pacote em kg (Máx: `2.5 kg`). |
+| | `distancia` | `DECIMAL` | | Distância até o destino em km (Máx: `8.0 km`). |
+| | `prioridade` | `VARCHAR` | | Nível de urgência (`ALTA`, `MEDIA`, `BAIXA`). |
+| | `status` | `VARCHAR` | | Estado do pedido (`NA_FILA`, `EM_VOO`, `ENTREGUE`). |
 
+---
+
+#### 🔗 Relacionamentos
+
+| Entidade Origem | Relação | Entidade Destino | Regra de Negócio |
+| :--- | :---: | :--- | :--- |
+| **`DRONE`** | `1 : N` | **`ENTREGA`** | Um drone realiza múltiplas entregas ao longo do tempo. Cada entrega pertence a exatamente 1 drone. |
+| **`ENTREGA`** | `1 : N` | **`PEDIDO`** | Uma entrega (viagem) pode agrupar 1 ou mais pedidos, respeitando o limite total de 2,5 kg. |
 * **Pedidos:** Armazena código do pedido (`#PED-xxx`), peso (kg), distância (km), prioridade, coordenadas, status (`NA_FILA`, `EM_VOO`, `ENTREGUE`) e timestamps.
 * **Entregas:** Registra o evento da viagem, vinculando o drone executor, o horário de saída/conclusão e a lista de pedidos atendidos no mesmo lote.
 * **Drones:** Mantém o nível de bateria atual, status operacional, localização em tempo real e histórico de viagens.
