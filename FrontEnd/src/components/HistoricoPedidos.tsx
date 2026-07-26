@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import type { Pedido } from '../types';
+import type { Entrega } from '../types';
 import './HistoricoPedidos.css';
 
 const formatarData = (valor?: string | null) => {
@@ -16,7 +16,7 @@ const formatarData = (valor?: string | null) => {
 };
 
 function HistoricoPedidos() {
-  const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [entregas, setEntregas] = useState<Entrega[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
@@ -25,19 +25,13 @@ function HistoricoPedidos() {
         setCarregando(true);
 
         const resposta = await axios
-          .get('http://localhost:8080/pedidos')
+          .get('http://localhost:8080/entregas/historico')
           .catch(() => ({ data: [] }));
 
-        const lista = Array.isArray(resposta.data) ? resposta.data : [];
-        const finalizados = lista.filter((pedido: Pedido) => {
-          const status = String(pedido.status ?? '').toUpperCase();
-          return status === 'ENTREGUE' || status === 'FINALIZADO';
-        });
-
-        setPedidos(finalizados);
+        setEntregas(Array.isArray(resposta.data) ? resposta.data : []);
       } catch (erro) {
         console.error('Erro ao carregar histórico:', erro);
-        setPedidos([]);
+        setEntregas([]);
       } finally {
         setCarregando(false);
       }
@@ -50,8 +44,8 @@ function HistoricoPedidos() {
     return <div className="historico-card historico-empty">Carregando histórico...</div>;
   }
 
-  if (!pedidos.length) {
-    return <div className="historico-card historico-empty">Nenhum pedido finalizado foi encontrado.</div>;
+  if (!entregas.length) {
+    return <div className="historico-card historico-empty">Nenhuma entrega concluída foi encontrada.</div>;
   }
 
   return (
@@ -59,37 +53,51 @@ function HistoricoPedidos() {
       <div className="historico-header">
         <div>
           <h2>Histórico de Pedidos</h2>
-          <p>Pedidos concluídos e entregues.</p>
+          <p>Viagens de entrega concluídas, agrupadas por voo.</p>
         </div>
-        <span className="historico-badge">{pedidos.length} finalizados</span>
+        <span className="historico-badge">{entregas.length} entregas</span>
       </div>
 
-      <div className="historico-table-wrapper">
-        <table className="historico-table">
-          <thead>
-            <tr>
-              <th>Número / ID</th>
-              <th>Data de realização</th>
-              <th>Data de entrega</th>
-              <th>Peso (kg)</th>
-              <th>Distância (km)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pedidos.map((pedido) => (
-              <tr key={pedido.id}>
-                <td>
-                  <strong>{pedido.numeroPedido ?? `#${pedido.id}`}</strong>
-                </td>
-                <td>{formatarData(pedido.dataCriacao)}</td>
-                <td>{formatarData(pedido.dataFinalizacao)}</td>
-                <td>{pedido.peso ?? '—'}</td>
-                <td>{pedido.distancia ?? '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {entregas.map((entrega) => (
+        <div className="historico-card" key={entrega.id}>
+          <div className="historico-header">
+            <div>
+              <h2>{entrega.id}</h2>
+              <p>
+                Drone {entrega.droneCodigo ?? entrega.droneId} · {formatarData(entrega.dataHora)} · Distância total: {entrega.distanciaTotal?.toFixed(2) ?? '—'} km
+              </p>
+            </div>
+            <span className="historico-badge">{entrega.pedidos?.length ?? 0} pedido(s)</span>
+          </div>
+
+          <div className="historico-table-wrapper">
+            <table className="historico-table">
+              <thead>
+                <tr>
+                  <th>Número / ID</th>
+                  <th>Data de realização</th>
+                  <th>Data de entrega</th>
+                  <th>Peso (kg)</th>
+                  <th>Distância (km)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(entrega.pedidos ?? []).map((pedido) => (
+                  <tr key={pedido.id}>
+                    <td>
+                      <strong>{pedido.numeroPedido ?? `#${pedido.id}`}</strong>
+                    </td>
+                    <td>{formatarData(pedido.dataCriacao)}</td>
+                    <td>{formatarData(pedido.dataFinalizacao)}</td>
+                    <td>{pedido.peso ?? '—'}</td>
+                    <td>{pedido.distancia ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

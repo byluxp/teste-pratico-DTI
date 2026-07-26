@@ -15,6 +15,10 @@ import java.util.List;
 @Service
 public class AlocacaoService {
 
+    // Tolerâncias de ponto flutuante para as regras estritas de peso/distância na alocação em grupo
+    private static final double PESO_EPSILON_KG = 1e-6;
+    private static final double DISTANCIA_EPSILON_KM = 1e-6;
+
     private final PedidoRepository pedidoRepository;
     private final DroneRepository droneRepository;
     private final VooRepository vooRepository;
@@ -63,7 +67,8 @@ public class AlocacaoService {
             double distanciaTotalPrevista = 0.0;
 
             for (Pedido pedido : new ArrayList<>(pedidosPendentes)) {
-                if (pesoAtual + pedido.getPeso() > drone.getCapacidadeMaximaKg()) {
+                // Regra 1: a soma dos pesos do voo não pode ultrapassar a capacidade máxima do drone (com tolerância de ponto flutuante)
+                if (pesoAtual + pedido.getPeso() > drone.getCapacidadeMaximaKg() + PESO_EPSILON_KG) {
                     continue;
                 }
 
@@ -78,7 +83,8 @@ public class AlocacaoService {
                         drone.getAutonomiaMaximaKm() != null ? drone.getAutonomiaMaximaKm() : 16.0
                 );
 
-                if (novaDistanciaTotal <= autonomiaDisponivelKm) {
+                // Regra 2: a distância total da rota (ida + entre clientes + volta) não pode ultrapassar a autonomia do drone
+                if (novaDistanciaTotal <= autonomiaDisponivelKm + DISTANCIA_EPSILON_KM) {
                     pedidosAlocados.add(pedido);
                     pesoAtual += pedido.getPeso();
                     distanciaTotalPrevista = novaDistanciaTotal;
@@ -119,7 +125,7 @@ public class AlocacaoService {
     }
 
     private void reordenarPedidosIndisponiveis() {
-        for (StatusPedido status : List.of(StatusPedido.ALOCADO, StatusPedido.EM_ROTA)) {
+        for (StatusPedido status : List.of(StatusPedido.ALOCADO, StatusPedido.EM_TRANSITO)) {
             for (Pedido pedido : pedidoRepository.findByStatus(status)) {
                 Voo voo = pedido.getVoo();
                 Drone drone = voo != null ? voo.getDrone() : null;

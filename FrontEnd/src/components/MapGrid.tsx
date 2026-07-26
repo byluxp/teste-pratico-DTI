@@ -348,8 +348,10 @@ export default function MapGrid({ obstaculos, drones, pedidos, activeVoos, onAdd
         {/* Draw Drones */}
         {drones.map(d => {
           const animState = animatedDrones[d.id!];
-          const x = animState ? animState.x : (d.baseX ?? 0);
-          const y = animState ? animState.y : (d.baseY ?? 0);
+          // Prioriza a animação local (waypoints com desvio de obstáculos) quando ativa;
+          // caso contrário, usa a posição em tempo real recebida via SSE (posX/posY), atualizada a cada 200ms no backend.
+          const x = animState ? animState.x : (d.posX ?? d.baseX ?? 0);
+          const y = animState ? animState.y : (d.posY ?? d.baseY ?? 0);
           
           // Merge real backend drone with animated status
           const displayDrone = animState 

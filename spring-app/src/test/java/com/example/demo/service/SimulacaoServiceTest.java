@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.model.*;
 import com.example.demo.repository.DroneRepository;
+import com.example.demo.repository.EntregaRepository;
 import com.example.demo.repository.PedidoRepository;
 import com.example.demo.repository.VooRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,12 @@ class SimulacaoServiceTest {
     @Mock
     private AlocacaoService alocacaoService;
 
+    @Mock
+    private SseBroadcastService sseBroadcastService;
+
+    @Mock
+    private EntregaRepository entregaRepository;
+
     @InjectMocks
     private SimulacaoService simulacaoService;
 
@@ -48,7 +55,7 @@ class SimulacaoServiceTest {
 
         pedido = new Pedido();
         pedido.setId(10L);
-        pedido.setStatus(StatusPedido.EM_ROTA);
+        pedido.setStatus(StatusPedido.EM_TRANSITO);
 
         voo = new Voo();
         voo.setId(100L);
@@ -68,7 +75,7 @@ class SimulacaoServiceTest {
 
         assertEquals(StatusVoo.EM_ANDAMENTO, voo.getStatus());
         assertEquals(StatusDrone.EM_VOO, drone.getStatus());
-        assertEquals(StatusPedido.EM_ROTA, pedido.getStatus());
+        assertEquals(StatusPedido.EM_TRANSITO, pedido.getStatus());
 
         verify(vooRepository).save(voo);
         verify(droneRepository).save(drone);
@@ -86,7 +93,7 @@ class SimulacaoServiceTest {
 
         assertEquals(StatusDrone.ENTREGANDO, drone.getStatus());
         // Pedido só deve ser finalizado quando o voo concluir o ciclo (drone de volta à base)
-        assertEquals(StatusPedido.EM_ROTA, pedido.getStatus());
+        assertEquals(StatusPedido.EM_TRANSITO, pedido.getStatus());
 
         verify(droneRepository).save(drone);
         verify(pedidoRepository, never()).save(pedido);

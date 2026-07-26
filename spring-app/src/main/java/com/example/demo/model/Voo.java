@@ -36,6 +36,10 @@ public class Voo {
     private LocalDateTime dataHoraSaida;
     private LocalDateTime dataHoraChegada;
 
+    // Timestamp de início da etapa/fase atual (EM_VOO ou RETORNANDO), usado para
+    // interpolar a posição do drone com base na velocidade real (km/h) e na distância da perna.
+    private LocalDateTime faseIniciadaEm;
+
     public Voo() {
     }
 

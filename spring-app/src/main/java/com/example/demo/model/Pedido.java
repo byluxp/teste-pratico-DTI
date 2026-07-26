@@ -43,6 +43,12 @@ public class Pedido {
     @JoinColumn(name = "voo_id")
     private Voo voo;
 
+    // Registro agrupado da entrega (viagem) ao qual este pedido pertence, preenchido quando o voo é concluído
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "entrega_id")
+    private Entrega entrega;
+
     public Pedido() {
     }
 

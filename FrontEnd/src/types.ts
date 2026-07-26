@@ -21,6 +21,8 @@ export interface Drone {
   codigo?: string;
   baseX?: number;
   baseY?: number;
+  posX?: number;
+  posY?: number;
   pedidosNoVoo?: string[];
 }
 
@@ -29,4 +31,14 @@ export interface Obstaculo {
   coordenadaX: number;
   coordenadaY: number;
   raioKm: number;
+}
+
+// Registro agrupado de uma viagem de entrega concluída (Delivery Trip)
+export interface Entrega {
+  id: string;
+  dataHora?: string;
+  droneId?: number;
+  droneCodigo?: string;
+  distanciaTotal?: number;
+  pedidos: Pedido[];
 }

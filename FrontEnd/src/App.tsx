@@ -10,8 +10,10 @@ import HistoricoPedidos from './components/HistoricoPedidos';
 import axios from 'axios';
 
 import type { Pedido, Drone, Obstaculo } from './types';
+import { useSimulacaoStream } from './hooks/useSimulacaoStream';
 
 function App() {
+  const { drones: dronesStream, pedidos: pedidosStream, voos } = useSimulacaoStream();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [drones, setDrones] = useState<Drone[]>([]);
   const [obstaculos, setObstaculos] = useState<Obstaculo[]>([]);
@@ -20,48 +22,44 @@ function App() {
   const [modalEspecificacoes, setModalEspecificacoes] = useState(false);
   const [modalInfoDrones, setModalInfoDrones] = useState(false);
   const [metricasDrones, setMetricasDrones] = useState<any>(null);
+  const [pedidosGerados, setPedidosGerados] = useState<any[] | null>(null);
 
-  const fetchDados = async () => {
+  const fetchObstaculos = async () => {
     try {
-      // Usaremos try-catch e ignoraremos falhas se o endpoint não estiver pronto,
-      // mas na vida real os endpoints /pedidos, /drones, /obstaculos deveriam existir.
-      // O desafio possui /drones.
-      
-      const resDrones = await axios.get('http://localhost:8080/drones/status').catch(() => ({ data: [] }));
-      const resObstaculos = await axios.get('http://localhost:8080/obstaculos').catch(() => ({ data: [] }));
-      const resPedidos = await axios.get('http://localhost:8080/pedidos').catch(() => ({ data: [] }));
-      const resVoos = await axios.get('http://localhost:8080/entregas/rota').catch(() => ({ data: [] }));
-
-      const pedidosList = Array.isArray(resPedidos.data) ? resPedidos.data : [];
-      const voosList = Array.isArray(resVoos.data) ? resVoos.data : [];
-
-      const dronesComPedidos = (Array.isArray(resDrones.data) ? resDrones.data : []).map((drone: any) => {
-        const pedidosDoDrone = voosList
-          .filter((voo: any) => String(voo?.drone?.id ?? '') === String(drone.id))
-          .flatMap((voo: any) => Array.isArray(voo?.pedidos) ? voo.pedidos : [])
-          .map((pedido: any) => pedido?.numeroPedido ?? `#${pedido?.id}`)
-          .filter(Boolean);
-
-        return {
-          ...drone,
-          codigo: drone.codigo ?? `DD${drone.id}`,
-          pedidosNoVoo: pedidosDoDrone
-        };
-      });
-
-      setDrones(dronesComPedidos);
-      setObstaculos(Array.isArray(resObstaculos.data) ? resObstaculos.data : []);
-      setPedidos(pedidosList);
+      const res = await axios.get('http://localhost:8080/obstaculos');
+      setObstaculos(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
-      console.error(e);
+      console.error("Erro ao buscar obstáculos:", e);
     }
   };
 
   useEffect(() => {
-    fetchDados();
-    const interval = setInterval(fetchDados, 5000); // Polling a cada 5s
-    return () => clearInterval(interval);
+    fetchObstaculos();
   }, []);
+
+  // Drones e pedidos agora chegam em tempo real via SSE (useSimulacaoStream),
+  // substituindo o polling HTTP anterior.
+  useEffect(() => {
+    const dronesComPedidos = dronesStream.map((drone: any) => {
+      const pedidosDoDrone = voos
+        .filter((voo: any) => String(voo?.drone?.id ?? '') === String(drone.id))
+        .flatMap((voo: any) => Array.isArray(voo?.pedidos) ? voo.pedidos : [])
+        .map((pedido: any) => pedido?.numeroPedido ?? `#${pedido?.id}`)
+        .filter(Boolean);
+
+      return {
+        ...drone,
+        codigo: drone.codigo ?? `DD${drone.id}`,
+        pedidosNoVoo: pedidosDoDrone
+      };
+    });
+
+    setDrones(dronesComPedidos);
+  }, [dronesStream, voos]);
+
+  useEffect(() => {
+    setPedidos(pedidosStream);
+  }, [pedidosStream]);
 
   const handleAddObstaculo = async (obs: Obstaculo) => {
     try {
@@ -94,16 +92,19 @@ function App() {
 
   const handleGerarPedidosAleatorios = async () => {
     const DISTANCIA_MAX_KM = 8; // raio máximo, garante ida + volta <= 16 km
+    const gerados: any[] = [];
     for (let i = 0; i < 5; i++) {
       const angulo = Math.random() * (Math.PI / 2); // quadrante positivo (0-90°)
       const raio = Math.random() * DISTANCIA_MAX_KM;
-      await handleAddPedido({
-        coordenadaX: parseFloat((raio * Math.cos(angulo)).toFixed(2)),
-        coordenadaY: parseFloat((raio * Math.sin(angulo)).toFixed(2)),
-        peso: parseFloat((Math.random() * (2.5 - 0.1) + 0.1).toFixed(2)),
-        prioridade: ['ALTA', 'MEDIA', 'BAIXA'][Math.floor(Math.random() * 3)]
-      });
+      const coordenadaX = parseFloat((raio * Math.cos(angulo)).toFixed(2));
+      const coordenadaY = parseFloat((raio * Math.sin(angulo)).toFixed(2));
+      const peso = parseFloat((Math.random() * (2.5 - 0.1) + 0.1).toFixed(2));
+      const prioridade = ['ALTA', 'MEDIA', 'BAIXA'][Math.floor(Math.random() * 3)];
+
+      await handleAddPedido({ coordenadaX, coordenadaY, peso, prioridade });
+      gerados.push({ coordenadaX, coordenadaY, peso, distancia: parseFloat(raio.toFixed(2)), prioridade });
     }
+    setPedidosGerados(gerados);
   };
 
   const handleIniciarEntregas = async () => {
@@ -112,7 +113,6 @@ function App() {
       if (res.data && res.data.length > 0) {
         setActiveVoos(res.data);
       }
-      fetchDados(); // refresh immediate
     } catch (e) {
       console.error("Erro ao despachar:", e);
     }
@@ -133,7 +133,7 @@ function App() {
       await axios.post('http://localhost:8080/reset');
       setPedidos([]);
       setObstaculos([]);
-      fetchDados();
+      fetchObstaculos();
     } catch (e) {
       console.error("Erro ao resetar:", e);
     }
@@ -191,7 +191,7 @@ function App() {
                 Gerar Pedidos Aleatórios
               </button>
             </div>
-            <SidebarQueue pedidos={pedidos} onAddPedido={handleAddPedido} />
+            <SidebarQueue pedidos={pedidos} drones={drones} voos={voos} onAddPedido={handleAddPedido} />
           </aside>
 
           <main className="main-content glass-panel">
@@ -243,6 +243,22 @@ function App() {
               ))}
             </ul>
             <button className="btn-iniciar-entrega" onClick={() => setModalInfoDrones(false)}>Fechar</button>
+          </div>
+        </div>
+      )}
+
+      {pedidosGerados && (
+        <div className="modal-overlay" onClick={() => setPedidosGerados(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>Pedidos Gerados Aleatoriamente</h3>
+            <ul>
+              {pedidosGerados.map((p, i) => (
+                <li key={i}>
+                  <strong>Peso:</strong> {p.peso} kg · <strong>Distância até o destino:</strong> {p.distancia} km · <strong>Coordenadas:</strong> ({p.coordenadaX}, {p.coordenadaY})
+                </li>
+              ))}
+            </ul>
+            <button className="btn-iniciar-entrega" onClick={() => setPedidosGerados(null)}>Fechar</button>
           </div>
         </div>
       )}

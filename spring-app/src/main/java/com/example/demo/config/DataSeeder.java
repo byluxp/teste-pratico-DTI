@@ -37,6 +37,8 @@ public class DataSeeder implements CommandLineRunner {
         drone.setStatus(StatusDrone.IDLE);
         drone.setBaseX(baseX);
         drone.setBaseY(baseY);
+        drone.setPosX(baseX);
+        drone.setPosY(baseY);
         droneRepository.save(drone);
     }
 }

@@ -24,6 +24,10 @@ public class Drone {
     private Double baseX;
     private Double baseY;
 
+    // Posição atual do drone em voo, atualizada a cada tick da simulação (interpolação em tempo real)
+    private Double posX;
+    private Double posY;
+
     @Enumerated(EnumType.STRING)
     private StatusDrone status;
 

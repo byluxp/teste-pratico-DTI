@@ -3,7 +3,7 @@ package com.example.demo.model;
 public enum StatusPedido {
     PENDENTE,
     ALOCADO,
-    EM_ROTA,
+    EM_TRANSITO,
     ENTREGUE,
     CANCELADO
 }
