@@ -131,7 +131,7 @@ function App() {
       <header className="dashboard-header glass-panel">
         <div className="header-title-group">
           <h1 className="glow-text">
-            <Package size={20} /> Drone Delivery
+            <Package size={20} /> Dronelivery
           </h1>
         </div>
 

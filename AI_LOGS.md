@@ -1,6 +1,6 @@
 # Logs e Prompts de Desenvolvimento da IA
 
-Este documento registra o histórico completo de instruções, prompts e alterações arquiteturais e visuais realizadas com o auxílio da Inteligência Artificial durante a construção e evolução do **Simulador de Entregas por Drone**.
+Este documento registra o histórico completo de instruções, prompts e alterações arquiteturais e visuais realizadas com o auxílio da Inteligência Artificial durante a construção e evolução do **Simulador de Entregas por Drone - Dronelivery**.
 
 ---
 
@@ -36,7 +36,7 @@ Durante o processo de desenvolvimento, as seguintes regras de negócio e conceit
 ## 📝 Histórico de Prompts e Evolução do Projeto
 
 ### 1. Modelagem Inicial e Regras de Negócio
-> **Prompt:** *"Atenção, revise se estes requisitos a seguir estão implementados: Simulador de Encomendas em Drone. Regras Básicas: Capacidade: Cada drone suporta até X kg e pode viajar até Y km por carga. Mapeamento: A cidade é uma malha de coordenadas (exemplo: 2D). Sistema de Pedidos: O sistema deve receber pedidos com Localização do cliente (X, Y), Peso do pacote, Prioridade da entrega. O sistema precisa alocar os pacotes nos drones com o menor número de viagens possível, respeitando as regras. Simular bateria, Inserir obstáculos, Calcular tempo total, Criar uma fila de entrega."*
+> **Prompt:** *"Verifique se os requisitos a seguir estão implementados: Simulador de Encomendas em Drone. Regras Básicas: Capacidade: Cada drone suporta até X kg e pode viajar até Y km por carga. Mapeamento: A cidade é uma malha de coordenadas (exemplo: 2D). Sistema de Pedidos: O sistema deve receber pedidos com Localização do cliente (X, Y), Peso do pacote, Prioridade da entrega. O sistema precisa alocar os pacotes nos drones com o menor número de viagens possível, respeitando as regras. Simular bateria, Inserir obstáculos, Calcular tempo total, Criar uma fila de entrega."*
 
 ### 2. Interface Gráfica 2D e Elementos Visuais
 > **Prompt:** *"Agora vamos criar a representação do frontend simples, simulando visualmente em 2D o drone indo do ponto A ao B, com ícone de bateria, dashboard, funcionalidade de marcar área de obstáculos (estilo seleção do Windows) e o ícone da fila de entregas."*
@@ -57,7 +57,7 @@ Durante o processo de desenvolvimento, as seguintes regras de negócio e conceit
 > **Prompt:** *"Altere o componente MapGrid para ter o fundo escuro (#111827) e linhas de grid discretas (#1F2937), mantendo o contraste dos elementos sobre ele. O restante do aplicativo deve usar fundo claro e botões em tom de roxo (#7C3AED)."*
 
 ### 8. Ajuste de Alinhamento e Header Contínuo
-> **Prompt:** *"Corrigir o alinhamento do título 'Drone Delivery' no canto superior esquerdo e transformar os cards de métricas em uma barra superior contínua, retangular e unificada (sem o aspecto de botões/cards arredondados e soltos)."*
+> **Prompt:** *"Alinhar título 'Dronelivery' no canto superior esquerdo e transformar os cards de métricas em uma barra superior contínua, retangular e unificada (sem o aspecto de botões/cards arredondados e soltos)."*
 
 ### 9. Tipografia Geométrica e Design Quadrado
 > **Prompt:** *"Atualizar a tipografia do projeto para a fonte 'Chakra Petch' (estilo quadrado/geométrico) e zerar o border-radius de TODOS os elementos visuais da barra superior, botões e cards de métricas, deixando a estrutura com bordas retas."*
@@ -81,7 +81,7 @@ Durante o processo de desenvolvimento, as seguintes regras de negócio e conceit
 - **Aba de Histórico (`HistoricoPedidos.tsx`):** Implementação de visualização em tabela/cards dedicada aos pedidos finalizados, listando ID, data de criação, data de entrega, peso e distância.
 - **Visual e Tipografia (`Chakra Petch`):** Importação da fonte geométrica via Google Fonts e padronização visual com bordas retas (`border-radius: 0px`).
 - **Navegação e Layout:**
-  - Header reorganizado com alinhamento do título "Drone Delivery".
+  - Header reorganizado com alinhamento do título "Dronelivery".
   - Barra de métricas contínua ("Drones Disponíveis", "Drones em Voo", "Tempo Médio", "Entregas Concluídas", "Drone Eficiente") integrada sem cards isolados.
   - Reordenação da sidebar de pedidos ("Iniciar Entregas" e "Novo Pedido" posicionados acima de "Gerar Pedidos Aleatórios").
   - Estilo *Borderless*: Eliminação de caixas brancas com bordas pesadas para integração fluida com o fundo da página.
