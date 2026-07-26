@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import './Buttons.css';
-import { Package, RotateCcw, History, Info } from 'lucide-react';
+import { Package, RotateCcw, History, Info, Gauge } from 'lucide-react';
 import MapGrid from './components/MapGrid';
 import SidebarQueue from './components/SidebarQueue';
 import SidebarDrones from './components/SidebarDrones';
@@ -16,9 +16,10 @@ function App() {
   const [drones, setDrones] = useState<Drone[]>([]);
   const [obstaculos, setObstaculos] = useState<Obstaculo[]>([]);
   const [activeVoos, setActiveVoos] = useState<any[]>([]);
-  const [voos, setVoos] = useState<any[]>([]);
   const [abaAtiva, setAbaAtiva] = useState<'simulador' | 'historico'>('simulador');
   const [modalEspecificacoes, setModalEspecificacoes] = useState(false);
+  const [modalInfoDrones, setModalInfoDrones] = useState(false);
+  const [metricasDrones, setMetricasDrones] = useState<any>(null);
 
   const fetchDados = async () => {
     try {
@@ -51,7 +52,6 @@ function App() {
       setDrones(dronesComPedidos);
       setObstaculos(Array.isArray(resObstaculos.data) ? resObstaculos.data : []);
       setPedidos(pedidosList);
-      setVoos(voosList);
     } catch (e) {
       console.error(e);
     }
@@ -93,11 +93,14 @@ function App() {
   };
 
   const handleGerarPedidosAleatorios = async () => {
+    const DISTANCIA_MAX_KM = 8; // raio máximo, garante ida + volta <= 16 km
     for (let i = 0; i < 5; i++) {
+      const angulo = Math.random() * (Math.PI / 2); // quadrante positivo (0-90°)
+      const raio = Math.random() * DISTANCIA_MAX_KM;
       await handleAddPedido({
-        coordenadaX: Math.floor(Math.random() * 80) + 10,
-        coordenadaY: Math.floor(Math.random() * 80) + 10,
-        peso: Math.floor(Math.random() * 10) + 1,
+        coordenadaX: parseFloat((raio * Math.cos(angulo)).toFixed(2)),
+        coordenadaY: parseFloat((raio * Math.sin(angulo)).toFixed(2)),
+        peso: parseFloat((Math.random() * (2.5 - 0.1) + 0.1).toFixed(2)),
         prioridade: ['ALTA', 'MEDIA', 'BAIXA'][Math.floor(Math.random() * 3)]
       });
     }
@@ -113,6 +116,16 @@ function App() {
     } catch (e) {
       console.error("Erro ao despachar:", e);
     }
+  };
+
+  const handleAbrirInfoDrones = async () => {
+    try {
+      const res = await axios.get('http://localhost:8080/drones/metricas');
+      setMetricasDrones(res.data);
+    } catch (e) {
+      console.error("Erro ao buscar métricas dos drones:", e);
+    }
+    setModalInfoDrones(true);
   };
 
   const handleReset = async () => {
@@ -136,7 +149,7 @@ function App() {
         </div>
 
         <div className="header-metrics-wrap">
-          <DashboardMetrics drones={drones} pedidos={pedidos} voos={voos} />
+          <DashboardMetrics drones={drones} pedidos={pedidos} />
         </div>
 
         <div className="header-actions">
@@ -161,6 +174,9 @@ function App() {
           onClick={() => setAbaAtiva('historico')}
         >
           <History size={16} /> Histórico de Pedidos
+        </button>
+        <button className="aba-btn info-drones-btn" onClick={handleAbrirInfoDrones}>
+          <Gauge size={16} /> Informações sobre os Drones
         </button>
       </div>
 
@@ -209,6 +225,24 @@ function App() {
               <li><strong>Peso máximo da carga:</strong> 2,5 kg</li>
             </ul>
             <button className="btn-iniciar-entrega" onClick={() => setModalEspecificacoes(false)}>Fechar</button>
+          </div>
+        </div>
+      )}
+
+      {modalInfoDrones && (
+        <div className="modal-overlay" onClick={() => setModalInfoDrones(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>Informações sobre os Drones</h3>
+            <p><strong>Tempo médio de viagem (geral):</strong> {Number(metricasDrones?.tempoMedioViagemGeralMinutos ?? 0).toFixed(1)} min</p>
+            <p><strong>Drone mais eficiente:</strong> {metricasDrones?.droneMaisEficiente ?? 'Nenhum'}</p>
+            <ul>
+              {(metricasDrones?.drones ?? []).map((d: any) => (
+                <li key={d.codigo}>
+                  <strong>{d.codigo}:</strong> {d.viagensConcluidas} viagens concluídas, {d.pedidosEntregues} pedidos entregues, tempo médio {Number(d.tempoMedioViagemMinutos ?? 0).toFixed(1)} min
+                </li>
+              ))}
+            </ul>
+            <button className="btn-iniciar-entrega" onClick={() => setModalInfoDrones(false)}>Fechar</button>
           </div>
         </div>
       )}

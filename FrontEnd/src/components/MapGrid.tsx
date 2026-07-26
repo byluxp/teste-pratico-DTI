@@ -86,12 +86,14 @@ export default function MapGrid({ obstaculos, drones, pedidos, activeVoos, onAdd
     if (activeVoos && activeVoos.length > 0) {
       activeVoos.forEach(voo => {
         const droneId = voo.drone.id;
+        const baseX = voo.drone.baseX ?? 0;
+        const baseY = voo.drone.baseY ?? 0;
         const pts = voo.pedidos;
         if (!pts || pts.length === 0) return;
 
         let sequence: any[] = [];
-        let curX = 0;
-        let curY = 0;
+        let curX = baseX;
+        let curY = baseY;
 
         // Start
         sequence.push({ x: curX, y: curY, status: 'CARREGANDO', delay: 1000 });
@@ -112,14 +114,14 @@ export default function MapGrid({ obstaculos, drones, pedidos, activeVoos, onAdd
           curY = p.coordenadaY;
         });
 
-        // Return
-        const returnPath = getPath(curX, curY, 0, 0, obstaculos);
+        // Return (cada drone retorna à sua própria base)
+        const returnPath = getPath(curX, curY, baseX, baseY, obstaculos);
         for (let i = 0; i < returnPath.length - 1; i++) {
           sequence.push({ x: returnPath[i].x, y: returnPath[i].y, status: 'RETORNANDO', delay: 1000 });
         }
         const finalRet = returnPath[returnPath.length - 1];
         sequence.push({ x: finalRet.x, y: finalRet.y, status: 'RETORNANDO', delay: 1500 });
-        sequence.push({ x: 0, y: 0, status: 'IDLE', delay: 500 });
+        sequence.push({ x: baseX, y: baseY, status: 'IDLE', delay: 500 });
 
         let currentStep = 0;
         const playNext = () => {
@@ -214,7 +216,7 @@ export default function MapGrid({ obstaculos, drones, pedidos, activeVoos, onAdd
     cameraY = firstMovingDrone.y;
     isMoving = true;
   }
-  
+
   let finalScale = manualZoom;
   let finalPanX = panX;
   let finalPanY = panY;
@@ -227,11 +229,6 @@ export default function MapGrid({ obstaculos, drones, pedidos, activeVoos, onAdd
   
   // Apply scale and translate
   const transform = `scale(${finalScale}) translate(${finalPanX}%, ${finalPanY}%)`;
-  const baseCharging = drones.some(d => {
-    const animState = animatedDrones[d.id!];
-    const status = animState ? animState.status : d.status;
-    return status === 'CARREGANDO' || status === 'IDLE';
-  });
 
   return (
     <div 
@@ -243,16 +240,16 @@ export default function MapGrid({ obstaculos, drones, pedidos, activeVoos, onAdd
       onMouseLeave={handleMouseUp}
     >
       <div className="map-controls-panel">
-        <button onClick={() => setPanY(y => y + 15)} title="Mover para Cima"><ArrowUp size={16} /></button>
-        <div style={{ display: 'flex', gap: '5px' }}>
-          <button onClick={() => setPanX(x => x + 15)} title="Mover para Esquerda"><ArrowLeft size={16} /></button>
-          <button onClick={() => { setManualZoom(1); setPanX(0); setPanY(0); }} title="Resetar Câmera"><Move size={16} /></button>
-          <button onClick={() => setPanX(x => x - 15)} title="Mover para Direita"><ArrowRight size={16} /></button>
+        <button onClick={() => setPanY(y => y + 15)} title="Mover para Cima"><ArrowUp size={12} /></button>
+        <div style={{ display: 'flex', gap: '3px' }}>
+          <button onClick={() => setPanX(x => x + 15)} title="Mover para Esquerda"><ArrowLeft size={12} /></button>
+          <button onClick={() => { setManualZoom(1); setPanX(0); setPanY(0); }} title="Resetar Câmera"><Move size={12} /></button>
+          <button onClick={() => setPanX(x => x - 15)} title="Mover para Direita"><ArrowRight size={12} /></button>
         </div>
-        <button onClick={() => setPanY(y => y - 15)} title="Mover para Baixo"><ArrowDown size={16} /></button>
-        <div style={{ display: 'flex', gap: '5px', marginTop: '10px' }}>
-          <button onClick={() => setManualZoom(z => Math.min(z + 0.2, 3))} title="Zoom In"><ZoomIn size={16} /></button>
-          <button onClick={() => setManualZoom(z => Math.max(z - 0.2, 0.5))} title="Zoom Out"><ZoomOut size={16} /></button>
+        <button onClick={() => setPanY(y => y - 15)} title="Mover para Baixo"><ArrowDown size={12} /></button>
+        <div style={{ display: 'flex', gap: '3px', marginTop: '6px' }}>
+          <button onClick={() => setManualZoom(z => Math.min(z + 0.2, 3))} title="Zoom In"><ZoomIn size={12} /></button>
+          <button onClick={() => setManualZoom(z => Math.max(z - 0.2, 0.5))} title="Zoom Out"><ZoomOut size={12} /></button>
         </div>
       </div>
 
@@ -261,13 +258,31 @@ export default function MapGrid({ obstaculos, drones, pedidos, activeVoos, onAdd
         ref={mapGridRef}
         style={{ transform, transition: 'transform 0.5s ease', transformOrigin: 'center' }}
       >
-        {/* Draw Base Station */}
-        <div className="base-station" style={{ top: '0%', left: '0%' }}>
-          BASE
-        </div>
-        <div className={`base-charger ${baseCharging ? 'active' : ''}`} title="Base de carregamento">
-          <Zap size={14} />
-        </div>
+        {/* Draw Base Stations (uma para cada drone, em sua coordenada de origem) */}
+        {drones.map(d => (
+          <div
+            key={`base-${d.id}`}
+            className="base-station"
+            style={{ top: `${d.baseY ?? 0}%`, left: `${d.baseX ?? 0}%` }}
+          >
+            {d.codigo ?? `DD${d.id}`}
+          </div>
+        ))}
+        {drones.map(d => {
+          const animState = animatedDrones[d.id!];
+          const status = animState ? animState.status : d.status;
+          const isCharging = status === 'CARREGANDO' || status === 'IDLE' || status === 'RECARREGANDO';
+          return (
+            <div
+              key={`charger-${d.id}`}
+              className={`base-charger ${isCharging ? 'active' : ''}`}
+              title={`Base de carregamento ${d.codigo ?? ''}`}
+              style={{ top: `${d.baseY ?? 0}%`, left: `${d.baseX ?? 0}%` }}
+            >
+              <Zap size={14} />
+            </div>
+          );
+        })}
 
         {/* Draw Pedidos as Pins */}
         {pedidos.map(p => (
@@ -333,8 +348,8 @@ export default function MapGrid({ obstaculos, drones, pedidos, activeVoos, onAdd
         {/* Draw Drones */}
         {drones.map(d => {
           const animState = animatedDrones[d.id!];
-          const x = animState ? animState.x : 0;
-          const y = animState ? animState.y : 0;
+          const x = animState ? animState.x : (d.baseX ?? 0);
+          const y = animState ? animState.y : (d.baseY ?? 0);
           
           // Merge real backend drone with animated status
           const displayDrone = animState 

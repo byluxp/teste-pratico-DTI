@@ -6,5 +6,6 @@ public enum StatusDrone {
     EM_VOO,
     ENTREGANDO,
     RETORNANDO,
+    RECARREGANDO,
     INDISPONIVEL
 }

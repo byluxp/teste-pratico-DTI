@@ -65,6 +65,17 @@ Durante o processo de desenvolvimento, as seguintes regras de negócio e conceit
 ### 10. Reorganização de Fluxo, Especificações e Animações no Mapa
 > **Prompt:** *"Reformular a estrutura visual para um estilo borderless (integrado ao fundo), reordenar os botões de ação ('Iniciar Entregas' agrupado ao 'Novo Pedido' acima de 'Gerar Pedidos Aleatórios'), criar modal de Especificações do Serviço (regras de BH, limites de 16km totais e 2.5kg), adicionar marcador de drone em movimento no trajeto e ícone de recarga com efeito pulso na base do mapa."*
 
+### 11. Validação do Build e Suíte de Testes
+> **Status:** Aprovado.
+> - **Backend (Spring Boot):** 10/10 testes unitários executados com 0 falhas e 0 erros.
+> - **Frontend (React + Vite/TS):** Processo de build e verificação de tipos concluídos com sucesso (0 erros de compilação).
+
+### 12. Reset de Sessão, Ciclo de Bateria, Priorização e Botão de Métricas
+> **Prompt:** *"Atue como Desenvolvedor Full Stack (Spring Boot + React + TypeScript) para resolver 5 problemas/melhorias no sistema: 1) Ajustar Docker/Spring Boot para zerar o banco de dados e vir limpo a cada inicialização; 2) Inicializar o drone 'DD02' e priorizar o 'DD01' na fila de alocação (acionando o DD02 apenas se DD01 estiver ocupado/sem bateria); 3) Simular recarga automática gradual da bateria do drone ao retornar para a base e validar autonomia antes da decolagem; 4) Restringir a geração de pedidos aleatórios para nunca ultrapassar 2.5 kg e 8 km de raio (16 km totais); 5) Criar um terceiro botão 'Informações sobre os Drones' na interface exibindo tempo médio de viagem e indicação do Drone Mais Eficiente em um modal."*
+
+### 13. Ajustes Finais de Interface, Navegação e Animações do Mapa
+> **Prompt:** *"Atue como Desenvolvedor Full Stack para realizar 6 correções na interface e regras: 1) Mover o registro de pedidos finalizados para que entrem no histórico e contador APENAS após a conclusão real do voo; 2) Remover 'Tempo Médio' e 'Drone Eficiente' da barra superior e consolidá-los dentro do modal de informações; 3) Posicionar o botão 'Informações sobre os Drones' ao lado da aba 'Histórico de Pedidos'; 4) Ajustar a simulação de bateria para carregar gradualmente de +5% em +5%; 5) Separar a posição inicial dos drones no mapa (DD01 e DD02 em bases distintas) e garantir que cada um retorne à sua base de origem; 6) Reduzir o tamanho dos botões/setas de controle do mapa."*
+
 ---
 
 ## 🛠️ Resumo das Alterações Realizadas no Projeto
@@ -76,23 +87,25 @@ Durante o processo de desenvolvimento, as seguintes regras de negócio e conceit
   - Endpoint `POST /api/pedidos` para registro de novos pedidos com geração automática de código único.
   - Endpoint `PUT /api/pedidos/{id}/finalizar` para registrar a entrega concluída e salvar timestamp de finalização.
   - Endpoint `GET /api/pedidos` para consulta do histórico de entregas.
+  - Endpoint de métricas da frota para expor tempo médio de viagem e cálculo do drone mais eficiente.
+- **Gestão de Bateria & Alocação:**
+  - Implementação do robô/agendador de recarga automática de bateria e validação de autonomia mínima no `AlocacaoService`.
+  - Priorização na ordem de seleção de drones (`DD01` primeiro, transbordo para `DD02`).
 
 ### Frontend (React + TypeScript)
-- **Aba de Histórico (`HistoricoPedidos.tsx`):** Implementação de visualização em tabela/cards dedicada aos pedidos finalizados, listando ID, data de criação, data de entrega, peso e distância.
+- **Aba de Histórico (`HistoricoPedidos.tsx`):** Visualização em tabela/cards dedicada aos pedidos finalizados, listando ID, data de criação, data de entrega, peso e distância.
 - **Visual e Tipografia (`Chakra Petch`):** Importação da fonte geométrica via Google Fonts e padronização visual com bordas retas (`border-radius: 0px`).
 - **Navegação e Layout:**
   - Header reorganizado com alinhamento do título "Dronelivery".
   - Barra de métricas contínua ("Drones Disponíveis", "Drones em Voo", "Tempo Médio", "Entregas Concluídas", "Drone Eficiente") integrada sem cards isolados.
   - Reordenação da sidebar de pedidos ("Iniciar Entregas" e "Novo Pedido" posicionados acima de "Gerar Pedidos Aleatórios").
   - Estilo *Borderless*: Eliminação de caixas brancas com bordas pesadas para integração fluida com o fundo da página.
-- **Modal de Especificações do Serviço:**
-  - Botão na barra principal para abertura de pop-up com as regras técnicas da frota (Área de atuação em Belo Horizonte - MG, raio de 8km ida + 8km volta, peso máximo de 2.5kg).
+- **Modal de Informações e Especificações:**
+  - Pop-up "Especificações do Serviço" (regras técnicas de BH, raio de 8km ida + 8km volta, peso máximo de 2.5kg).
+  - Terceiro botão/modal "Informações sobre os Drones" trazendo dados consolidados de eficiência e tempo médio por viagem.
+- **Gerador de Pedidos Aleatórios:**
+  - Aplicação de teto máximo de 2.5 kg por pacote e 8 km de raio por pedido gerado.
 - **Mapa e Animação de Drones (`MapGrid` / `DroneMarker`):**
   - Estilização escura (*Dark Mode* `#111827`) focada exclusivamente no `MapGrid`.
   - Ícone de drone acompanhando o vetor de movimento durante a simulação de voo.
   - Ícone de base de carregamento (*Charger*) posicionado no ponto de origem com efeito visual animado de pulso/neon de recarga.
-
-### 11. Validação do Build e Suíte de Testes
-> **Status:** Aprovado.
-> - **Backend (Spring Boot):** 10/10 testes unitários executados com 0 falhas e 0 erros.
-> - **Frontend (React + Vite/TS):** Processo de build e verificação de tipos concluídos com sucesso (0 erros de compilação).

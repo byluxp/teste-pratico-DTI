@@ -20,6 +20,10 @@ public class Drone {
     private Double velocidadeKmH; // Ex: 60 km/h
     private String codigo;
 
+    // Coordenada da base/hangar de origem e retorno do drone
+    private Double baseX;
+    private Double baseY;
+
     @Enumerated(EnumType.STRING)
     private StatusDrone status;
 

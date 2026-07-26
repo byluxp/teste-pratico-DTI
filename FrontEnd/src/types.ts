@@ -19,6 +19,8 @@ export interface Drone {
   autonomiaAtualKm: number;
   velocidadeKmH: number;
   codigo?: string;
+  baseX?: number;
+  baseY?: number;
   pedidosNoVoo?: string[];
 }
 

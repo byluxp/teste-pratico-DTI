@@ -48,6 +48,7 @@ class SimulacaoServiceTest {
 
         pedido = new Pedido();
         pedido.setId(10L);
+        pedido.setStatus(StatusPedido.EM_ROTA);
 
         voo = new Voo();
         voo.setId(100L);
@@ -75,7 +76,7 @@ class SimulacaoServiceTest {
     }
 
     @Test
-    void deveTransitarDeEmVooParaEntregando() {
+    void deveTransitarDeEmVooParaEntregandoSemFinalizarPedido() {
         voo.setStatus(StatusVoo.EM_ANDAMENTO);
         drone.setStatus(StatusDrone.EM_VOO);
 
@@ -84,10 +85,11 @@ class SimulacaoServiceTest {
         simulacaoService.simularTempo();
 
         assertEquals(StatusDrone.ENTREGANDO, drone.getStatus());
-        assertEquals(StatusPedido.ENTREGUE, pedido.getStatus());
+        // Pedido só deve ser finalizado quando o voo concluir o ciclo (drone de volta à base)
+        assertEquals(StatusPedido.EM_ROTA, pedido.getStatus());
 
         verify(droneRepository).save(drone);
-        verify(pedidoRepository).save(pedido);
+        verify(pedidoRepository, never()).save(pedido);
     }
 
     @Test
@@ -105,7 +107,7 @@ class SimulacaoServiceTest {
     }
 
     @Test
-    void deveTransitarDeRetornandoParaIdle() {
+    void deveTransitarDeRetornandoParaRecarregandoEFinalizarPedido() {
         voo.setStatus(StatusVoo.EM_ANDAMENTO);
         drone.setStatus(StatusDrone.RETORNANDO);
 
@@ -113,13 +115,16 @@ class SimulacaoServiceTest {
 
         simulacaoService.simularTempo();
 
-        assertEquals(StatusDrone.IDLE, drone.getStatus());
+        assertEquals(StatusDrone.RECARREGANDO, drone.getStatus());
         assertEquals(StatusVoo.CONCLUIDO, voo.getStatus());
+        assertEquals(StatusPedido.ENTREGUE, pedido.getStatus());
+        assertEquals(10L, pedido.getId());
         
         // Autonomia inicial era 50, viagem era 20
         assertEquals(30.0, drone.getAutonomiaAtualKm());
 
         verify(vooRepository).save(voo);
-        verify(droneRepository).save(drone);
+        verify(droneRepository, atLeastOnce()).save(drone);
+        verify(pedidoRepository).save(pedido);
     }
 }

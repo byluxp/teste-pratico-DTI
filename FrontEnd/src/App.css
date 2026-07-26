@@ -116,6 +116,11 @@
   border-color: #7c3aed;
 }
 
+.aba-btn.info-drones-btn {
+  margin-left: auto;
+}
+
+
 .sidebar {
   grid-column: 1 / 2;
   display: flex;

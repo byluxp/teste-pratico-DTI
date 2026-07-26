@@ -31,8 +31,10 @@ public class AlocacaoService {
     @Transactional
     public List<Voo> alocarPedidos() {
         List<Voo> voosCriados = new ArrayList<>();
+        // DD01 tem prioridade de alocação; DD02 só é usado se DD01 estiver ocupado/sem bateria suficiente
         List<Drone> dronesDisponiveis = droneRepository.findAll().stream()
                 .filter(d -> d.getStatus() == StatusDrone.IDLE && (d.getAutonomiaAtualKm() == null || d.getAutonomiaAtualKm() > 0.0))
+                .sorted(Comparator.comparing(Drone::getCodigo, Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
 
         if (dronesDisponiveis.isEmpty()) {
@@ -54,8 +56,10 @@ public class AlocacaoService {
 
             List<Pedido> pedidosAlocados = new ArrayList<>();
             double pesoAtual = 0.0;
-            double xAtual = 0.0;
-            double yAtual = 0.0;
+            double baseX = drone.getBaseX() != null ? drone.getBaseX() : 0.0;
+            double baseY = drone.getBaseY() != null ? drone.getBaseY() : 0.0;
+            double xAtual = baseX;
+            double yAtual = baseY;
             double distanciaTotalPrevista = 0.0;
 
             for (Pedido pedido : new ArrayList<>(pedidosPendentes)) {
@@ -64,9 +68,9 @@ public class AlocacaoService {
                 }
 
                 double distanciaParaPedido = calcularDistanciaComObstaculos(xAtual, yAtual, pedido.getCoordenadaX(), pedido.getCoordenadaY(), obstaculos);
-                double distanciaDeVolta = calcularDistanciaComObstaculos(pedido.getCoordenadaX(), pedido.getCoordenadaY(), 0.0, 0.0, obstaculos);
+                double distanciaDeVolta = calcularDistanciaComObstaculos(pedido.getCoordenadaX(), pedido.getCoordenadaY(), baseX, baseY, obstaculos);
                 
-                double distanciaDeVoltaAntiga = calcularDistanciaComObstaculos(xAtual, yAtual, 0.0, 0.0, obstaculos);
+                double distanciaDeVoltaAntiga = calcularDistanciaComObstaculos(xAtual, yAtual, baseX, baseY, obstaculos);
                 double novaDistanciaTotal = distanciaTotalPrevista - distanciaDeVoltaAntiga + distanciaParaPedido + distanciaDeVolta;
 
                 double autonomiaDisponivelKm = Math.min(

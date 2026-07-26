@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/drones")
@@ -28,6 +29,12 @@ public class DroneController {
     @GetMapping("/status")
     public List<Drone> listarDrones() {
         return droneService.listarDrones();
+    }
+
+    // Métricas de viagem/eficiência dos drones (tempo médio e drone mais eficiente)
+    @GetMapping("/metricas")
+    public Map<String, Object> listarMetricas() {
+        return droneService.listarMetricas();
     }
 
     // Endpoint extra para simular mudança de status/bateria

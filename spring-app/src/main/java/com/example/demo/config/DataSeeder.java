@@ -22,12 +22,12 @@ public class DataSeeder implements CommandLineRunner {
 
     public void seedDrone() {
         if (droneRepository.count() == 0) {
-            criarDronePadrao("DD01", 2.5, 16.0);
-            criarDronePadrao("DD02", 2.5, 16.0);
+            criarDronePadrao("DD01", 2.5, 16.0, 0.0, 0.0);
+            criarDronePadrao("DD02", 2.5, 16.0, 5.0, 0.0);
         }
     }
 
-    private void criarDronePadrao(String codigo, double capacidade, double autonomia) {
+    private void criarDronePadrao(String codigo, double capacidade, double autonomia, double baseX, double baseY) {
         Drone drone = new Drone();
         drone.setCodigo(codigo);
         drone.setCapacidadeMaximaKg(capacidade);
@@ -35,6 +35,8 @@ public class DataSeeder implements CommandLineRunner {
         drone.setAutonomiaAtualKm(autonomia);
         drone.setVelocidadeKmH(40.0);
         drone.setStatus(StatusDrone.IDLE);
+        drone.setBaseX(baseX);
+        drone.setBaseY(baseY);
         droneRepository.save(drone);
     }
 }
